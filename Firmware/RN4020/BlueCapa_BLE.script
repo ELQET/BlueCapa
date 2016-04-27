@@ -1,0 +1,31 @@
+//set UART to 2400
+SB,0
+//reboot
+R,1
+
+//set the highest RF power
+SP,7
+
+//no auto broadcast, enable UART hardware handshake
+SR,02000000
+
+//only User Defined Private Profile
+SS,00000001
+
+//clear all services and characteristics
+PZ
+
+//clear old script
+WC
+
+//check settings and properties
+D
+
+//how to broadcast data
+
+// 1. set message. 25 characters
+N,11223344
+
+// 2. broadcast message interval 50ms, during 310ms
+A,0032,0136
+

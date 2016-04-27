@@ -1,0 +1,1984 @@
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 
+                      00002     #INCLUDE    <hardware.INC>
+                      00001     LIST        P=16F1823         ; list directive to define processor
+                      00002     #INCLUDE    <P16F1823.INC>    ; processor specific variable definitions
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F1823 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      01153         LIST
+                      00003  
+                      00004  
+                      00005    
+                      00006 ;#define LED_RED                                        RA0 
+                      00007 #define LED_BLUE                                RA1
+                      00008 #define UART_CTS_IN                             RA2
+                      00009 #define MCLR_RA3_IN                             RA3
+                      00010 #define UART_RTS_OUT            RA4 
+                      00011 #define WAKE_HW_OUT                     RA5
+                      00012 
+                      00013 ;#define BTN2_CAP4_AN4_IN               RC0 ;an4
+                      00014 ;#define BTN3_CAP5_AN5_IN               RC1 ;an5
+                      00015 #define AREA_CAP6_AN6_IN                RC2 ;an6
+                      00016 
+                      00017 #define WAKE_SW_OUT                             RC3
+                      00018 #define UART_TX_OUT                             RC4
+                      00019 #define UART_RX_IN                              RC5
+                      00020 
+                      00021 
+                      00003     
+                      00004 
+                      00005 
+8007   084C           00006 __CONFIG _CONFIG1, _FCMEN_OFF & _IESO_OFF & _CP_ON & _CPD_ON & _BOREN_OFF & _MCLRE_ON & _PWRTE_ON & _FOS
+                            C_INTOSC & _CLKOUTEN_OFF & _WDTE_SWDTEN
+8008   1EFC           00007 __CONFIG _CONFIG2, _WRT_ALL & _PLLEN_OFF & _STVREN_ON & _BORV_19 & _LVP_OFF
+                      00008 
+                      00009 ;extern functions
+  0000                00010 EXTERN          Convert_num_to_char
+  0000                00011 EXTERN          MULV16_24
+  0000                00012 EXTERN          DIVV24
+  0000                00013 EXTERN          Measure_supply_voltage
+  0000                00014 EXTERN          Wait_512ms
+  0000                00015 EXTERN          Wait_256ms
+  0000                00016 EXTERN          Wait_128ms
+  0000                00017 EXTERN          Wait_64ms
+  0000                00018 EXTERN          Wait_32ms
+  0000                00019 EXTERN          Wait_16ms
+                      00020 
+                      00021 ;extern variables
+  0000                00022 EXTERN          TEMPX24
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  0000                00023 EXTERN          TEMPY16
+  0000                00024 EXTERN          RESULT24
+  0000                00025 EXTERN          TEMPY24
+  0000                00026 EXTERN          ad_value
+                      00027 
+                      00028 ;stav
+  00000000            00029 STAV_TOUCH_MEASURE_DONE         EQU                     0x00
+  00000001            00030 STAV_ZNAMIENKO                          EQU                     0x01
+  00000002            00031 STAV_FIRST_TIME                         EQU                     0x02
+  00000003            00032 STAV_AVERAGE_ZNAMIENKO          EQU                     0x03
+  00000004            00033 STAV_KEY_PUSHED                         EQU                     0x04
+                      00034 
+                      00035 
+                      00036 
+                      00037 ;buttons
+  00000000            00038 BUTTON_RF_POWER                         EQU                     0x00
+  00000001            00039 BUTTON_BEACON                           EQU                     0x01
+  00000002            00040 BUTTON_KEY                                      EQU                     0x02
+  00000003            00041 BUTTON_SENSOR_AREA                      EQU                     0x03
+  00000004            00042 BUTTONS_LOCKED                          EQU                     0x04
+  00000006            00043 BEACON_DATA                                     EQU                     0x06
+  00000007            00044 BEACON_ON                                       EQU                     0x07
+                      00045 
+                      00046 ;------------------------------------------------------------------------------
+                      00047 ; VARIABLE DEFINITIONS
+                      00048 ;------------------------------------------------------------------------------
+                      00049 
+                      00050 ; Example of using Shared Uninitialized Data Section
+                      00051 INT_VAR        UDATA_SHR        0x71 ; (ACCESS)
+0071                  00052 stav            RES             1    
+0072                  00053 raw                             RES                     2
+0074                  00054 current_average RES                     2
+0076                  00055 temp                    RES                     2
+0078                  00056 average_index   RES                     1
+0079                  00057 start_counter   RES                     1
+007A                  00058 percent                 RES                     2
+007C                  00059 rx_index                RES                     1
+007D                  00060 last_char_rx    RES                     1
+                      00061 
+                      00062 TEMP_VAR                UDATA                   0x30
+0030                  00063 average                 RES                     2 
+0032                  00064 xwait                   RES                     3
+0035                  00065 tx_index                RES                     1
+0036                  00066 buttons                 RES                     1
+0037                  00067 sensor                  RES                     1
+0038                  00068 log                             RES                     1
+                      00069 
+                      00070 
+                      00071 UART_VAR                UDATA                   0x50
+0050                  00072 uart_rx_buff    RES                     0x10
+0060                  00073 uart_tx_buff    RES                     0x10
+                      00074 
+                      00075 ;------------------------------------------------------------------------------
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00076 ; RESET VECTOR
+                      00077 ;------------------------------------------------------------------------------
+                      00078 
+                      00079 BEGIN     CODE    0x0000            ; processor reset vector
+                      00080     PAGESEL START
+0000   2???           00081     GOTO    START             
+                      00082 
+                      00083 ;------------------------------------------------------------------------------
+                      00084 ; INTERRUPT SERVICE ROUTINE
+                      00085 ;------------------------------------------------------------------------------
+                      00086 
+                      00087 ISR       CODE    0x0004            ; interrupt vector location
+                      00088         
+0004   0021           00089         BANKSEL PIE1
+0005   1E91           00090         BTFSS   PIE1, RCIE
+0006   2???           00091         GOTO    Jump_over_UART_Rx_interrupt
+0007   0020           00092         BANKSEL PIR1
+0008   1A91           00093         BTFSC   PIR1, RCIF
+0009   2???           00094         CALL    UART_Rx_interrupt
+000A                  00095 Jump_over_UART_Rx_interrupt     
+                      00096         
+                      00097         
+000A   0009           00098 RETFIE                                  ; return from interrupt
+                      00099 
+                      00100     
+                      00101    
+                      00102 ;------------------------------------------------------------------------------
+                      00103 ; MAIN PROGRAM
+                      00104 ;------------------------------------------------------------------------------
+                      00105 
+000B                  00106 START
+                      00107 ;switch oscilator to 8MHZ
+000B   0021           00108         BANKSEL OSCCON
+000C   3072           00109         MOVLW   0x72 ;8MHz
+000D   0099           00110         MOVWF   OSCCON
+                      00111         
+000E   2???           00112         CALL    Wait_64ms
+                      00113 
+000F   0023           00114         BANKSEL RCSTA 
+0010   019D           00115         CLRF    RCSTA 
+                      00116         
+0011   0023           00117         BANKSEL TXSTA
+0012   019E           00118         CLRF    TXSTA
+                      00119         
+0013   0024           00120         BANKSEL SSP1CON1 
+0014   0195           00121         CLRF    SSP1CON1 
+                      00122         
+0015   0027           00123         BANKSEL MDCON
+0016   019C           00124         CLRF    MDCON
+                      00125         
+0017   0025           00126         BANKSEL CCP1CON
+0018   0193           00127         CLRF    CCP1CON
+                      00128         
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0019   0022           00129         BANKSEL CM1CON0 
+001A   0191           00130         CLRF    CM1CON0 
+                      00131         
+001B   0022           00132         BANKSEL CM2CON0
+001C   0193           00133         CLRF    CM2CON0  
+                      00134         
+001D   0020           00135         BANKSEL T2CON
+001E   019C           00136         CLRF    T2CON
+                      00137         
+001F   0021           00138         BANKSEL ADCON0
+0020   019D           00139         CLRF    ADCON0
+                      00140 
+0021   0023           00141         BANKSEL ANSELA
+0022   018C           00142         CLRF    ANSELA
+0023   018E           00143         CLRF    ANSELC
+0024   150E           00144         BSF             ANSELC, AREA_CAP6_AN6_IN
+                      00145         
+0025   01??           00146         CLRF    stav
+                      00147         
+0026   0022           00148         BANKSEL LATC
+0027   018E           00149         CLRF    LATC
+0028   160E           00150         BSF             LATC, UART_TX_OUT
+0029   018C           00151         CLRF    LATA
+002A   160C           00152         BSF             LATA, UART_RTS_OUT
+002B   148C           00153         BSF             LATA, LED_BLUE
+                      00154 
+002C   0021           00155         BANKSEL TRISC
+002D   018E           00156         CLRF    TRISC
+002E   150E           00157         BSF             TRISC, AREA_CAP6_AN6_IN
+002F   168E           00158         BSF             TRISC, UART_RX_IN
+                      00159 
+0030   3000           00160         MOVLW   0x00 ;0x03
+0031   008C           00161         MOVWF   TRISA
+0032   150C           00162         BSF             TRISA, UART_CTS_IN
+0033   158C           00163         BSF             TRISA, MCLR_RA3_IN
+                      00164         
+0034   0024           00165         BANKSEL WPUC
+0035   018E           00166         CLRF    WPUC
+                      00167         ;BSF            WPUC, UART_RX_IN
+                      00168 
+0036   0024           00169         BANKSEL WPUA
+0037   018C           00170         CLRF    WPUA
+                      00171         ;BSF            WPUA, UART_CTS_IN
+                      00172         
+                      00173         ;deactivate interrupts
+0038   018B           00174         CLRF    INTCON
+                      00175         
+                      00176 ;init capacitive touch
+0039   2???           00177         CALL    Init_Cap_Touch
+003A   2???           00178         CALL    Init_and_start_timers
+                      00179         
+003B   2???           00180         CALL    Wait_256ms      
+                      00181         
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+003C   002?           00182         BANKSEL buttons
+003D   01??           00183         CLRF    buttons
+                      00184         
+003E                  00185 Nekonecna_slucka
+003E   0064           00186         CLRWDT
+                      00187         
+                      00188 ;dotykovy snimac
+003F   1800           00189         BTFSC   stav, STAV_TOUCH_MEASURE_DONE
+0040   2???           00190         CALL    Snimac_dotyku
+                      00191 
+0041   2???           00192 GOTO Nekonecna_slucka
+                      00193 
+                      00194 
+0042                  00195 Snimac_dotyku
+0042   0064           00196         CLRWDT
+                      00197 
+0043   1000           00198         BCF             stav, STAV_TOUCH_MEASURE_DONE
+                      00199         
+                      00200         ; average[index] = average[index] + (raw – average[index])/16;
+                      00201         
+0044   1180           00202         BCF             stav, STAV_AVERAGE_ZNAMIENKO
+                      00203         
+0045   08??           00204         MOVF    average_index, W
+0046   3E??           00205         ADDLW   average
+0047   0084           00206         MOVWF   FSR0L
+                      00207         ;L
+0048   0012           00208         MOVIW   FSR0++
+0049   00??           00209         MOVWF   temp
+                      00210         ;H
+004A   0012           00211         MOVIW   FSR0++
+004B   00??           00212         MOVWF   temp+1
+                      00213         
+004C   08??           00214         MOVF    temp, W
+004D   02??           00215         SUBWF   raw, F
+004E   08??           00216         MOVF    temp+1, W
+004F   3B??           00217         SUBWFB  raw+1, F
+                      00218         ;znamienko
+0050   1803           00219         BTFSC   STATUS, C
+0051   2???           00220         GOTO    Jump_over_sign
+0052   09??           00221         COMF    raw, F
+0053   09??           00222         COMF    raw+1, F
+0054   1580           00223         BSF             stav, STAV_AVERAGE_ZNAMIENKO
+0055                  00224 Jump_over_sign
+                      00225 
+                      00226         ;/16
+0055   36??           00227         LSRF    raw+1, F
+0056   0C??           00228         RRF             raw, F
+0057   36??           00229         LSRF    raw+1, F
+0058   0C??           00230         RRF             raw, F
+0059   36??           00231         LSRF    raw+1, F
+005A   0C??           00232         RRF             raw, F
+005B   36??           00233         LSRF    raw+1, F
+005C   0C??           00234         RRF             raw, F
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00235         
+005D   1980           00236         BTFSC   stav, STAV_AVERAGE_ZNAMIENKO
+005E   2???           00237         GOTO    Subtract_because_of_sign
+                      00238         
+                      00239         ;average[index] + 
+005F   08??           00240         MOVF    raw, W
+0060   07??           00241         ADDWF   temp, F
+0061   08??           00242         MOVF    raw+1, W
+0062   3D??           00243         ADDWFC  temp+1, F
+                      00244         
+0063   2???           00245         GOTO    Jump_over_sign_subtract
+0064                  00246 Subtract_because_of_sign
+                      00247 
+                      00248         ;average[index] - 
+0064   08??           00249         MOVF    raw, W
+0065   02??           00250         SUBWF   temp, F
+0066   08??           00251         MOVF    raw+1, W
+0067   3B??           00252         SUBWFB  temp+1, F
+                      00253 
+0068                  00254 Jump_over_sign_subtract
+                      00255         
+                      00256         ;save to average[index]
+0068   08??           00257         MOVF    average_index, W
+0069   3E??           00258         ADDLW   average
+006A   0084           00259         MOVWF   FSR0L
+                      00260         ;L
+006B   08??           00261         MOVF    temp, W
+006C   001A           00262         MOVWI   FSR0++
+006D   00??           00263         MOVWF   current_average
+                      00264         ;H
+006E   08??           00265         MOVF    temp+1, W
+006F   001A           00266         MOVWI   FSR0++
+0070   00??           00267         MOVWF   current_average+1
+                      00268         
+                      00269         ;reload raw
+0071   0020           00270         BANKSEL TMR1L
+0072   0816           00271         MOVF    TMR1L, W
+0073   00??           00272         MOVWF   raw
+0074   0020           00273         BANKSEL TMR1H
+0075   0817           00274         MOVF    TMR1H, W
+0076   00??           00275         MOVWF   raw+1
+                      00276         
+0077   1900           00277         BTFSC   stav, STAV_FIRST_TIME
+0078   2???           00278         GOTO    Do_normal
+0079   0064           00279         CLRWDT
+007A   2???           00280         CALL    Reset_and_start_timers
+007B   2???           00281         GOTO    Increase_index
+                      00282 
+007C                  00283 Do_normal
+                      00284 
+                      00285         ;percent = ((long)average[index] - (long)raw[index]);
+007C   1080           00286         BCF             stav, STAV_ZNAMIENKO
+007D   08??           00287         MOVF    raw, W
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+007E   02??           00288         SUBWF   current_average, W
+007F   00??           00289         MOVWF   percent
+0080   08??           00290         MOVF    raw+1, W
+0081   3B??           00291         SUBWFB  current_average+1, W
+0082   00??           00292         MOVWF   percent+1
+0083   1803           00293         BTFSC   STATUS, C
+0084   2???           00294         GOTO    Positive_result
+0085                  00295 Negative_result
+0085   09??           00296         COMF    percent, F
+0086   09??           00297         COMF    percent+1, F
+0087   3001           00298         MOVLW   0x01
+0088   07??           00299         ADDWF   percent, F
+0089   3000           00300         MOVLW   0x00
+008A   3D??           00301         ADDWFC  percent+1, F
+008B   1480           00302         BSF             stav, STAV_ZNAMIENKO
+008C                  00303 Positive_result
+                      00304         ;percent = percent * 1000; rozlisenie 0.1%
+                      00305         ;percent = percent / average[index];
+008C   002?           00306         BANKSEL TEMPX24
+008D   08??           00307         MOVF    percent, W
+008E   00??           00308         MOVWF   TEMPX24
+008F   08??           00309         MOVF    percent+1, W
+0090   00??           00310         MOVWF   TEMPX24+1
+0091   01??           00311         CLRF    TEMPX24+2
+0092   30E8           00312         MOVLW   0xE8 ; 1000  0x64 ;100
+0093   00??           00313         MOVWF   TEMPY16
+0094   3003           00314         MOVLW   0x03
+0095   00??           00315         MOVWF   TEMPY16+1
+0096   2???           00316         CALL    MULV16_24
+0097   08??           00317         MOVF    RESULT24, W
+0098   00??           00318         MOVWF   TEMPX24
+0099   08??           00319         MOVF    RESULT24+1, W
+009A   00??           00320         MOVWF   TEMPX24+1
+009B   08??           00321         MOVF    RESULT24+2, W
+009C   00??           00322         MOVWF   TEMPX24+2
+009D   08??           00323         MOVF    current_average, W
+009E   00??           00324         MOVWF   TEMPY24
+009F   08??           00325         MOVF    current_average+1, W
+00A0   00??           00326         MOVWF   TEMPY24+1
+00A1   01??           00327         CLRF    TEMPY24+2
+00A2   2???           00328         CALL    DIVV24
+00A3   08??           00329         MOVF    RESULT24, W
+00A4   00??           00330         MOVWF   percent
+00A5   08??           00331         MOVF    RESULT24+1, W
+00A6   00??           00332         MOVWF   percent+1
+00A7                  00333 Jump_over_percent
+                      00334 
+00A7   0064           00335         CLRWDT
+                      00336 
+00A8   2???           00337         CALL    Difference
+                      00338 
+00A9                  00339 Increase_index  
+00A9   0A??           00340         INCF    average_index, F
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00AA   0A??           00341         INCF    average_index, F
+00AB   08??           00342         MOVF    average_index, W
+00AC   3C01           00343         SUBLW   0x01 ; > 1
+00AD   1803           00344         BTFSC   STATUS, C
+00AE   0008           00345 RETURN   
+                      00346 ;>13    
+00AF   01??           00347         CLRF    average_index
+00B0   08??           00348         MOVF    start_counter, F
+00B1   1903           00349         BTFSC   STATUS, Z
+00B2   0008           00350 RETURN
+00B3   0B??           00351         DECFSZ  start_counter, F
+00B4   0008           00352 RETURN
+00B5   1500           00353         BSF             stav, STAV_FIRST_TIME
+00B6   0022           00354         BANKSEL LATA
+00B7   108C           00355         BCF             LATA, LED_BLUE
+00B8   0008           00356 RETURN
+                      00357 
+                      00358 
+00B9                  00359 Difference
+                      00360 ;test ci percento je ok
+00B9   08??           00361         MOVF    percent+1, F
+00BA   1D03           00362         BTFSS   STATUS, Z
+00BB   2???           00363         GOTO    Reset_timers
+                      00364 ;normal
+                      00365 ;urob rozdiel
+                      00366 ;nastavenie citlivosti
+00BC   3003           00367         MOVLW   0x03 ;0.3% rozdiel vo frekvencii oscilatora spusti akciu
+00BD   02??           00368         SUBWF   percent, W
+                      00369 ;vyhodnot
+00BE   1C03           00370         BTFSS   STATUS, C
+00BF   2???           00371         GOTO    Reset_timers
+                      00372 ;uloz hodnotu
+00C0   002?           00373         BANKSEL sensor
+00C1   08??           00374         MOVF    percent, W
+00C2   00??           00375         MOVWF   sensor
+                      00376 ;tlacidlo -> prepni stav
+00C3   2???           00377         CALL    Send_change_command
+00C4                  00378 Save_current_raw_value
+                      00379 ;save to average[index]
+00C4   08??           00380         MOVF    average_index, W
+00C5   3E??           00381         ADDLW   average
+00C6   0084           00382         MOVWF   FSR0L
+                      00383         ;L
+00C7   08??           00384         MOVF    raw, W
+00C8   001A           00385         MOVWI   FSR0++
+                      00386         ;H
+00C9   08??           00387         MOVF    raw+1, W
+00CA   001A           00388         MOVWI   FSR0++
+00CB                  00389 Reset_timers
+00CB   2???           00390         CALL    Reset_and_start_timers
+00CC   0008           00391 RETURN
+                      00392 
+                      00393 
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00CD                  00394 Send_change_command
+00CD   1880           00395         BTFSC   stav, STAV_ZNAMIENKO
+00CE   2???           00396         GOTO    Released
+00CF   2???           00397         CALL    Sensor_area_action_touch
+00D0   0008           00398 RETURN
+00D1                  00399 Released
+00D1   2???           00400         CALL    Sensor_area_action_untouch
+00D2   0008           00401 RETURN
+                      00402 
+                      00403 
+00D3                  00404 Sensor_area_action_touch
+00D3   002?           00405         BANKSEL buttons
+00D4   1300           00406         BCF             buttons, BEACON_DATA
+00D5   1580           00407         BSF             buttons, BUTTON_SENSOR_AREA
+00D6   2???           00408         CALL    Broadcast_packet
+00D7   0008           00409 RETURN
+                      00410 
+                      00411 
+00D8                  00412 Sensor_area_action_untouch
+00D8   002?           00413         BANKSEL buttons
+00D9   1300           00414         BCF             buttons, BEACON_DATA
+00DA   1180           00415         BCF             buttons, BUTTON_SENSOR_AREA
+00DB   2???           00416         CALL    Broadcast_packet
+00DC   0008           00417 RETURN
+                      00418 
+                      00419 
+00DD                  00420 Broadcast_packet
+                      00421 ;indikacia LEDkou 
+00DD   0022           00422         BANKSEL LATA
+00DE   148C           00423         BSF             LATA, LED_BLUE
+                      00424 
+                      00425 ;zmeraj napajacie napatie
+00DF   2???           00426         CALL    Measure_supply_voltage
+                      00427 
+                      00428 ;otvor UART
+00E0   2???           00429         CALL    Open_UART
+                      00430 
+                      00431 ;odosli prikaz N + data pre paket
+00E1   2???           00432         CALL    Send_N_cmd      
+                      00433         
+                      00434 ;cakaj odozvu
+00E2   30FB           00435         MOVLW   0xFB
+00E3   2???           00436         CALL    Wait_for_rx_data
+                      00437 
+                      00438 ;skontroluj AOK
+00E4   002?           00439         BANKSEL log
+00E5   3004           00440         MOVLW   0x04
+00E6   00??           00441         MOVWF   log
+00E7   2???           00442         CALL    Check_if_AOK
+00E8   2???           00443         CALL    Log_and_RESET
+                      00444 
+                      00445 ;odosli prikaz A + casovanie => odosle data do eteru    
+00E9   2???           00446         CALL    Send_A_cmd
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00447         
+                      00448 ;cakaj odozvu
+00EA   30FA           00449         MOVLW   0xFA    
+00EB   2???           00450         CALL    Wait_for_rx_data
+                      00451 
+                      00452 ;skontroluj AOK
+00EC   002?           00453         BANKSEL log
+00ED   3005           00454         MOVLW   0x05
+00EE   00??           00455         MOVWF   log
+00EF   2???           00456         CALL    Check_if_AOK
+00F0   2???           00457         CALL    Log_and_RESET
+                      00458         
+00F1   0023           00459         BANKSEL TXSTA
+00F2   129E           00460         BCF             TXSTA, TXEN
+                      00461         
+00F3   0022           00462         BANKSEL LATA
+00F4   108C           00463         BCF             LATA, LED_BLUE
+                      00464         
+                      00465 ;pockaj 384ms kym sa dovysiela zatial sa uspi
+                      00466         ;CALL   Wait_512ms
+00F5   2???           00467         CALL    Wait_256ms
+00F6   2???           00468         CALL    Wait_128ms
+                      00469         
+00F7   2???           00470         CALL    Close_UART
+00F8   0008           00471 RETURN
+                      00472 
+                      00473 
+00F9                  00474 Send_R_cmd
+                      00475 ;vytvor buffer na odoslanie
+00F9   002?           00476         BANKSEL tx_index
+00FA   01??           00477         CLRF    tx_index
+00FB   3052           00478         MOVLW   'R'
+00FC   2???           00479         CALL    Insert_byte_to_tx_buff
+00FD   302C           00480         MOVLW   ','
+00FE   2???           00481         CALL    Insert_byte_to_tx_buff
+00FF   3031           00482         MOVLW   '1'
+0100   2???           00483         CALL    Insert_byte_to_tx_buff
+0101   300D           00484         MOVLW   '\r'
+0102   2???           00485         CALL    Insert_byte_to_tx_buff
+0103   300A           00486         MOVLW   '\n'
+0104   2???           00487         CALL    Insert_byte_to_tx_buff
+                      00488 ;odosli vygenerovany buffer
+0105   30??           00489         MOVLW   uart_tx_buff
+0106   0084           00490         MOVWF   FSR0
+0107                  00491 Send_next_char_R                
+0107   0012           00492         MOVIW   FSR0++
+0108   2???           00493         CALL    Send_char
+0109   3A0A           00494         XORLW   '\n'
+010A   1D03           00495         BTFSS   STATUS, Z
+010B   2???           00496         GOTO    Send_next_char_R
+010C   0008           00497 RETURN
+                      00498 
+                      00499 
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+010D                  00500 Send_A_cmd
+                      00501 ;vytvor buffer na odoslanie
+010D   002?           00502         BANKSEL tx_index
+010E   01??           00503         CLRF    tx_index
+010F   3041           00504         MOVLW   'A'
+0110   2???           00505         CALL    Insert_byte_to_tx_buff
+0111   302C           00506         MOVLW   ','
+0112   2???           00507         CALL    Insert_byte_to_tx_buff
+0113   3030           00508         MOVLW   '0'
+0114   2???           00509         CALL    Insert_byte_to_tx_buff
+0115   3030           00510         MOVLW   '0'
+0116   2???           00511         CALL    Insert_byte_to_tx_buff
+0117   3033           00512         MOVLW   '3'
+0118   2???           00513         CALL    Insert_byte_to_tx_buff
+0119   3032           00514         MOVLW   '2'
+011A   2???           00515         CALL    Insert_byte_to_tx_buff
+011B   302C           00516         MOVLW   ','
+011C   2???           00517         CALL    Insert_byte_to_tx_buff
+011D   3030           00518         MOVLW   '0'
+011E   2???           00519         CALL    Insert_byte_to_tx_buff
+011F   3031           00520         MOVLW   '1'
+0120   2???           00521         CALL    Insert_byte_to_tx_buff
+0121   3033           00522         MOVLW   '3'
+0122   2???           00523         CALL    Insert_byte_to_tx_buff
+0123   3036           00524         MOVLW   '6'
+0124   2???           00525         CALL    Insert_byte_to_tx_buff
+0125   300D           00526         MOVLW   '\r'
+0126   2???           00527         CALL    Insert_byte_to_tx_buff
+0127   300A           00528         MOVLW   '\n'
+0128   2???           00529         CALL    Insert_byte_to_tx_buff
+                      00530 ;odosli vygenerovany buffer
+0129   30??           00531         MOVLW   uart_tx_buff
+012A   0084           00532         MOVWF   FSR0
+012B                  00533 Send_next_char_A                
+012B   0012           00534         MOVIW   FSR0++
+012C   2???           00535         CALL    Send_char
+012D   3A0A           00536         XORLW   '\n'
+012E   1D03           00537         BTFSS   STATUS, Z
+012F   2???           00538         GOTO    Send_next_char_A
+0130   0008           00539 RETURN
+                      00540 
+                      00541 
+0131                  00542 Send_N_cmd
+0131   0064           00543         CLRWDT
+                      00544 ;vytvor buffer na odoslanie
+0132   002?           00545         BANKSEL tx_index
+0133   01??           00546         CLRF    tx_index
+0134   304E           00547         MOVLW   'N'
+0135   2???           00548         CALL    Insert_byte_to_tx_buff
+0136   302C           00549         MOVLW   ','
+0137   2???           00550         CALL    Insert_byte_to_tx_buff
+                      00551 ;zaciatok paketu oznac znakom S => 0x53
+0138   3035           00552         MOVLW   '5'
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0139   2???           00553         CALL    Insert_byte_to_tx_buff
+013A   3033           00554         MOVLW   '3'
+013B   2???           00555         CALL    Insert_byte_to_tx_buff
+                      00556 ;zapis obsah registrov
+013C   002?           00557         BANKSEL buttons
+013D   08??           00558         MOVF    buttons, W
+013E   2???           00559         CALL    Insert_register_to_tx_buff
+013F   002?           00560         BANKSEL sensor
+0140   08??           00561         MOVF    sensor, W
+0141   2???           00562         CALL    Insert_register_to_tx_buff
+0142   002?           00563         BANKSEL ad_value
+0143   08??           00564         MOVF    ad_value+1, W
+0144   2???           00565         CALL    Insert_register_to_tx_buff
+0145   002?           00566         BANKSEL ad_value
+0146   08??           00567         MOVF    ad_value, W
+0147   2???           00568         CALL    Insert_register_to_tx_buff
+                      00569 ;koniec paketu oznac znakom E => 0x45
+0148   3034           00570         MOVLW   '4'
+0149   2???           00571         CALL    Insert_byte_to_tx_buff
+014A   3035           00572         MOVLW   '5'
+014B   2???           00573         CALL    Insert_byte_to_tx_buff
+014C   300D           00574         MOVLW   '\r'
+014D   2???           00575         CALL    Insert_byte_to_tx_buff
+014E   300A           00576         MOVLW   '\n'
+014F   2???           00577         CALL    Insert_byte_to_tx_buff
+                      00578 ;odosli vygenerovany buffer
+0150   30??           00579         MOVLW   uart_tx_buff
+0151   0084           00580         MOVWF   FSR0
+0152                  00581 Send_next_char_N                
+0152   0012           00582         MOVIW   FSR0++
+0153   2???           00583         CALL    Send_char
+0154   3A0A           00584         XORLW   '\n'
+0155   1D03           00585         BTFSS   STATUS, Z
+0156   2???           00586         GOTO    Send_next_char_N
+0157   0008           00587 RETURN
+                      00588 
+                      00589 
+0158                  00590 Insert_register_to_tx_buff
+0158   00??           00591         MOVWF   temp+1
+0159   0E??           00592         SWAPF   temp+1, W
+015A   390F           00593         ANDLW   0x0F
+015B   2???           00594         CALL    Convert_num_to_char
+015C   2???           00595         CALL    Insert_byte_to_tx_buff
+015D   08??           00596         MOVF    temp+1, W
+015E   390F           00597         ANDLW   0x0F
+015F   2???           00598         CALL    Convert_num_to_char
+0160   2???           00599         CALL    Insert_byte_to_tx_buff
+0161   0008           00600 RETURN
+                      00601 
+                      00602 
+0162                  00603 Insert_byte_to_tx_buff
+0162   00??           00604         MOVWF   temp
+0163   002?           00605         BANKSEL tx_index
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0164   08??           00606         MOVF    tx_index, W
+0165   3E??           00607         ADDLW   uart_tx_buff
+0166   0084           00608         MOVWF   FSR0
+0167   08??           00609         MOVF    temp, W
+0168   0080           00610         MOVWF   INDF0
+0169   0A??           00611         INCF    tx_index, F
+016A   08??           00612         MOVF    tx_index, W
+016B   3C0F           00613         SUBLW   0x0F
+016C   1803           00614         BTFSC   STATUS, C
+016D   0008           00615 RETURN
+016E   01??           00616         CLRF    tx_index
+016F   0008           00617 RETURN
+                      00618 
+                      00619 
+0170                  00620 Send_char
+0170   00??           00621         MOVWF   temp
+0171   0023           00622         BANKSEL TXSTA
+0172   169E           00623         BSF             TXSTA, TXEN
+0173   0064           00624         CLRWDT
+                      00625 ;cakaj na handshake od modulu CTS = 0 
+0174                  00626 Wait_for_CTS
+0174   0020           00627         BANKSEL PORTA
+0175   190C           00628         BTFSC   PORTA, UART_CTS_IN
+0176   2???           00629         GOTO    Wait_for_CTS
+0177   0064           00630         CLRWDT
+                      00631 ;mozes odoslat 
+0178                  00632 Wait_for_free_buffer
+0178   0023           00633         BANKSEL TXSTA
+0179   1C9E           00634         BTFSS   TXSTA, TRMT
+017A   2???           00635         GOTO    Wait_for_free_buffer
+017B   0023           00636         BANKSEL TXREG
+017C   08??           00637         MOVF    temp, W
+017D   009A           00638         MOVWF   TXREG
+017E   0008           00639 RETURN
+                      00640 
+                      00641 
+017F                  00642 Check_if_END
+017F   3045           00643         MOVLW   'E'
+0180   00??           00644         MOVWF   temp
+0181   3000           00645         MOVLW   0x00
+0182   2???           00646         CALL    Check_char
+0183   1D03           00647         BTFSS   STATUS, Z
+0184   3400           00648 RETLW   0x00
+0185   304E           00649         MOVLW   'N'
+0186   00??           00650         MOVWF   temp
+0187   3001           00651         MOVLW   0x01
+0188   2???           00652         CALL    Check_char
+0189   1D03           00653         BTFSS   STATUS, Z
+018A   3400           00654 RETLW   0x00
+018B   3044           00655         MOVLW   'D'
+018C   00??           00656         MOVWF   temp
+018D   3002           00657         MOVLW   0x02
+018E   2???           00658         CALL    Check_char
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+018F   1D03           00659         BTFSS   STATUS, Z
+0190   3400           00660 RETLW   0x00
+0191   300D           00661         MOVLW   0x0D
+0192   00??           00662         MOVWF   temp
+0193   3003           00663         MOVLW   0x03
+0194   2???           00664         CALL    Check_char
+0195   1D03           00665         BTFSS   STATUS, Z
+0196   3400           00666 RETLW   0x00
+0197   3401           00667 RETLW   0x01
+                      00668 
+                      00669 
+0198                  00670 Check_if_AOK
+0198   3041           00671         MOVLW   'A'
+0199   00??           00672         MOVWF   temp
+019A   3000           00673         MOVLW   0x00
+019B   2???           00674         CALL    Check_char
+019C   1D03           00675         BTFSS   STATUS, Z
+019D   3400           00676 RETLW   0x00
+019E   304F           00677         MOVLW   'O'
+019F   00??           00678         MOVWF   temp
+01A0   3001           00679         MOVLW   0x01
+01A1   2???           00680         CALL    Check_char
+01A2   1D03           00681         BTFSS   STATUS, Z
+01A3   3400           00682 RETLW   0x00
+01A4   304B           00683         MOVLW   'K'
+01A5   00??           00684         MOVWF   temp
+01A6   3002           00685         MOVLW   0x02
+01A7   2???           00686         CALL    Check_char
+01A8   1D03           00687         BTFSS   STATUS, Z
+01A9   3400           00688 RETLW   0x00
+01AA   300D           00689         MOVLW   0x0D
+01AB   00??           00690         MOVWF   temp
+01AC   3003           00691         MOVLW   0x03
+01AD   2???           00692         CALL    Check_char
+01AE   1D03           00693         BTFSS   STATUS, Z
+01AF   3400           00694 RETLW   0x00
+01B0   3401           00695 RETLW   0x01
+                      00696 
+                      00697 
+01B1                  00698 Check_if_CMD
+01B1   3043           00699         MOVLW   'C'
+01B2   00??           00700         MOVWF   temp
+01B3   3000           00701         MOVLW   0x00
+01B4   2???           00702         CALL    Check_char
+01B5   1D03           00703         BTFSS   STATUS, Z
+01B6   3400           00704 RETLW   0x00
+01B7   304D           00705         MOVLW   'M'
+01B8   00??           00706         MOVWF   temp
+01B9   3001           00707         MOVLW   0x01
+01BA   2???           00708         CALL    Check_char
+01BB   1D03           00709         BTFSS   STATUS, Z
+01BC   3400           00710 RETLW   0x00
+01BD   3044           00711         MOVLW   'D'
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01BE   00??           00712         MOVWF   temp
+01BF   3002           00713         MOVLW   0x02
+01C0   2???           00714         CALL    Check_char
+01C1   1D03           00715         BTFSS   STATUS, Z
+01C2   3400           00716 RETLW   0x00
+01C3   300D           00717         MOVLW   0x0D
+01C4   00??           00718         MOVWF   temp
+01C5   3003           00719         MOVLW   0x03
+01C6   2???           00720         CALL    Check_char
+01C7   1D03           00721         BTFSS   STATUS, Z
+01C8   3400           00722 RETLW   0x00
+01C9   3401           00723 RETLW   0x01
+                      00724 
+                      00725 
+01CA                  00726 Check_char
+01CA   3E??           00727         ADDLW   uart_rx_buff    
+01CB   0084           00728         MOVWF   FSR0    
+01CC   0800           00729         MOVF    INDF0, W
+01CD   06??           00730         XORWF   temp, W
+01CE   0008           00731 RETURN
+                      00732 
+                      00733 
+01CF                  00734 Wait_for_rx_data
+01CF   002?           00735         BANKSEL log
+01D0   00??           00736         MOVWF   log
+01D1   0064           00737         CLRWDT
+                      00738 ;povol prijem dat RTS = 0
+01D2   0022           00739         BANKSEL LATA
+01D3   120C           00740         BCF             LATA, UART_RTS_OUT
+01D4                  00741 Waiting_for_rx_data
+01D4   08??           00742         MOVF    last_char_rx, W
+01D5   3A0A           00743         XORLW   '\n'
+01D6   1D03           00744         BTFSS   STATUS, Z
+01D7   2???           00745         GOTO    Waiting_for_rx_data
+                      00746 ;stopni prijem dalsich dat RTS = 1
+01D8   0022           00747         BANKSEL LATA
+01D9   160C           00748         BSF             LATA, UART_RTS_OUT
+01DA   01??           00749         CLRF    last_char_rx
+01DB   01??           00750         CLRF    rx_index        
+01DC   0008           00751 RETURN
+                      00752 
+                      00753 
+01DD                  00754 Open_UART
+                      00755 ;nastav seriovy port
+01DD   0023           00756         BANKSEL SPBRGL
+01DE   3040           00757         MOVLW   0x40
+01DF   009B           00758         MOVWF   SPBRGL
+                      00759         
+01E0   0023           00760         BANKSEL SPBRGH
+01E1   3003           00761         MOVLW   0x03
+01E2   009C           00762         MOVWF   SPBRGH
+                      00763         
+01E3   0023           00764         BANKSEL TXSTA
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01E4   3006           00765         MOVLW   0x06
+01E5   009E           00766         MOVWF   TXSTA
+                      00767         
+01E6   0023           00768         BANKSEL BAUDCON
+01E7   3048           00769         MOVLW   0x48
+01E8   009F           00770         MOVWF   BAUDCON
+                      00771         
+01E9   0023           00772         BANKSEL RCSTA
+01EA   3000           00773         MOVLW   0x00
+01EB   009D           00774         MOVWF   RCSTA
+                      00775         
+01EC   01??           00776         CLRF    rx_index
+01ED   01??           00777         CLRF    last_char_rx
+                      00778         
+                      00779 ;nastav prerusenia
+01EE   0020           00780         BANKSEL PIR1
+01EF   1291           00781         BCF             PIR1, RCIF
+                      00782         
+01F0   0021           00783         BANKSEL PIE1
+01F1   1691           00784         BSF             PIE1, RCIE
+                      00785         
+01F2   30C0           00786         MOVLW   0xC0
+01F3   008B           00787         MOVWF   INTCON
+                      00788 
+                      00789 ;aktivuj seriovy port - prijem dat      
+01F4   0023           00790         BANKSEL RCSTA
+01F5   179D           00791         BSF             RCSTA, SPEN
+01F6   161D           00792         BSF             RCSTA, CREN
+                      00793         
+                      00794 ;zobud bluetooth modul a ocakavaj CMD   
+01F7   0022           00795         BANKSEL LATA
+01F8   168C           00796         BSF             LATA, WAKE_HW_OUT
+01F9   2???           00797         CALL    Wait_16ms
+01FA   0022           00798         BANKSEL LATC
+01FB   158E           00799         BSF             LATC, WAKE_SW_OUT
+                      00800         
+                      00801         ;CALL   Wait_128ms
+                      00802         ;CALL   Wait_512ms
+                      00803 
+                      00804 ;cakaj odozvu
+01FC   30F9           00805         MOVLW   0xF9    
+01FD   2???           00806         CALL    Wait_for_rx_data
+                      00807 
+                      00808 ;spracuj data
+01FE   002?           00809         BANKSEL log
+01FF   3006           00810         MOVLW   0x06
+0200   00??           00811         MOVWF   log
+0201   2???           00812         CALL    Check_if_CMD
+0202   2???           00813         CALL    Log_and_RESET
+0203   0008           00814 RETURN
+                      00815 
+                      00816 
+0204                  00817 Close_UART
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00818 ;uspi bluetooth modul a ocakavaj END    
+0204   0022           00819         BANKSEL LATC
+0205   118E           00820         BCF             LATC, WAKE_SW_OUT
+                      00821 ;cakaj odozvu
+0206   30FF           00822         MOVLW   0xFF    
+0207   2???           00823         CALL    Wait_for_rx_data
+                      00824 ;skontroluj END
+0208   002?           00825         BANKSEL log
+0209   3007           00826         MOVLW   0x07
+020A   00??           00827         MOVWF   log
+020B   2???           00828         CALL    Check_if_END
+020C   2???           00829         CALL    Log_and_RESET
+                      00830 ;deep sleep     
+020D   0022           00831         BANKSEL LATA
+020E   128C           00832         BCF             LATA, WAKE_HW_OUT
+                      00833 
+020F   01??           00834         CLRF    last_char_rx
+0210   01??           00835         CLRF    rx_index
+                      00836 ;vypni UART
+0211   0023           00837         BANKSEL TXSTA
+0212   129E           00838         BCF             TXSTA, TXEN     
+0213   0023           00839         BANKSEL RCSTA
+0214   139D           00840         BCF             RCSTA, SPEN
+0215   0008           00841 RETURN
+                      00842 
+                      00843 
+0216                  00844 Reset_and_start_timers
+                      00845         ;CALL   Wait_128ms
+0216   3006           00846         MOVLW   0x06 ;0x03
+0217   0020           00847         BANKSEL CPSCON1
+0218   009F           00848         MOVWF   CPSCON1
+0219   0020           00849         BANKSEL CPSCON0
+021A   30CC           00850         MOVLW   0xCC ;high range
+021B   009E           00851         MOVWF   CPSCON0
+021C                  00852 Init_and_start_timers   
+021C   0020           00853         BANKSEL TMR1L
+021D   0196           00854         CLRF    TMR1L
+021E   0020           00855         BANKSEL TMR1H
+021F   0197           00856         CLRF    TMR1H
+0220   0020           00857         BANKSEL T1CON
+0221   1418           00858         BSF             T1CON, TMR1ON
+0222                  00859 Go_sleep_CPU
+                      00860         ;CALL   Wait_64ms
+                      00861 
+0222   2???           00862         CALL    Wait_16ms
+0223   0020           00863         BANKSEL CPSCON0
+0224   139E           00864         BCF             CPSCON0, CPSON
+0225   2???           00865         CALL    Wait_32ms
+0226   0020           00866         BANKSEL CPSCON0
+0227   179E           00867         BSF             CPSCON0, CPSON
+                      00868 
+0228   2???           00869         CALL    Wait_16ms
+0229   0020           00870         BANKSEL CPSCON0
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+022A   139E           00871         BCF             CPSCON0, CPSON
+022B   2???           00872         CALL    Wait_32ms
+022C   0020           00873         BANKSEL CPSCON0
+022D   179E           00874         BSF             CPSCON0, CPSON
+                      00875 
+022E   2???           00876         CALL    Wait_16ms
+022F   0020           00877         BANKSEL CPSCON0
+0230   139E           00878         BCF             CPSCON0, CPSON
+0231   2???           00879         CALL    Wait_32ms
+0232   0020           00880         BANKSEL CPSCON0
+0233   179E           00881         BSF             CPSCON0, CPSON
+0234   2???           00882         CALL    Wait_16ms
+                      00883 
+0235   0020           00884         BANKSEL T1CON
+0236   1018           00885         BCF             T1CON, TMR1ON
+0237   0020           00886         BANKSEL TMR1L
+0238   0816           00887         MOVF    TMR1L, W
+0239   00??           00888         MOVWF   raw
+023A   0020           00889         BANKSEL TMR1H
+023B   0817           00890         MOVF    TMR1H, W
+023C   00??           00891         MOVWF   raw+1
+023D   0020           00892         BANKSEL CPSCON0
+023E   139E           00893         BCF             CPSCON0, CPSON
+023F   1400           00894         BSF             stav, STAV_TOUCH_MEASURE_DONE
+                      00895 
+0240   2???           00896         CALL    Wait_32ms
+0241   0008           00897 RETURN
+                      00898 
+                      00899 
+0242                  00900 Init_Cap_Touch
+0242   3001           00901         MOVLW   0x01
+0243   00??           00902         MOVWF   average_index
+0244   30??           00903         MOVLW   average
+0245   0084           00904         MOVWF   FSR0L
+0246                  00905 Clear_average
+0246   3000           00906         MOVLW   0x00
+0247   001A           00907         MOVWI   FSR0++
+0248   001A           00908         MOVWI   FSR0++
+0249   0B??           00909         DECFSZ  average_index, F
+024A   2???           00910         GOTO    Clear_average
+                      00911         
+024B   01??           00912         CLRF    current_average
+024C   01??           00913         CLRF    current_average+1
+024D   01??           00914         CLRF    raw
+024E   01??           00915         CLRF    raw+1
+024F   3068           00916         MOVLW   0x68 ;0xF0
+0250   00??           00917         MOVWF   start_counter
+                      00918 
+0251   0021           00919         BANKSEL OPTION_REG
+0252   3020           00920         MOVLW   0x20 ;TMR0 off
+0253   0095           00921         MOVWF   OPTION_REG
+0254   0020           00922         BANKSEL T1CON
+0255   30C5           00923         MOVLW   0xC5
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0256   0098           00924         MOVWF   T1CON
+0257   0020           00925         BANKSEL T1GCON
+0258   0199           00926         CLRF    T1GCON
+0259   0020           00927         BANKSEL TMR1L
+025A   0196           00928         CLRF    TMR1L
+025B   0020           00929         BANKSEL TMR1H
+025C   0197           00930         CLRF    TMR1H
+                      00931         ;FVRCON1
+025D   0022           00932         BANKSEL FVRCON
+025E   30C9           00933         MOVLW   0xC9 ;Uref(comp) = 2.048V, Uref(ADC) = 1.024V
+025F   0097           00934         MOVWF   FVRCON
+                      00935         ;DACCON0
+0260   0022           00936         BANKSEL DACCON0
+0261   3088           00937         MOVLW   0x88
+0262   0098           00938         MOVWF   DACCON0
+                      00939         ;DACCON1
+0263   0022           00940         BANKSEL DACCON1
+0264   3001           00941         MOVLW   0x01
+0265   0099           00942         MOVWF   DACCON1
+                      00943         ;CPSCON0
+0266   0020           00944         BANKSEL CPSCON0
+0267   30CC           00945         MOVLW   0xCC ;high range
+0268   009E           00946         MOVWF   CPSCON0
+                      00947         ;CPSCON1
+0269   0020           00948         BANKSEL CPSCON1
+026A   3006           00949         MOVLW   0x06
+026B   009F           00950         MOVWF   CPSCON1
+026C   0008           00951 RETURN
+                      00952 
+                      00953 
+026D                  00954 Log_and_RESET
+026D   3A00           00955         XORLW   0x00
+026E   1D03           00956         BTFSS   STATUS, Z
+026F   2???           00957         GOTO    Jump_over_RESET
+0270   0001           00958         RESET
+0271                  00959 Jump_over_RESET
+0271   002?           00960         BANKSEL log
+0272   01??           00961         CLRF    log
+0273   0008           00962 RETURN
+                      00963 
+                      00964 
+                      00965 
+                      00966 ;#######################################################
+                      00967 ;############# PRERUSENIA ##############################
+                      00968 ;#######################################################
+                      00969 
+0274                  00970 UART_Rx_interrupt
+0274   1291           00971         BCF             PIR1, RCIF
+0275   08??           00972         MOVF    rx_index, W
+0276   3E??           00973         ADDLW   uart_rx_buff    
+0277   0084           00974         MOVWF   FSR0
+0278   0023           00975         BANKSEL RCREG
+0279   0819           00976         MOVF    RCREG, W
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+027A   0080           00977         MOVWF   INDF0
+027B   00??           00978         MOVWF   last_char_rx
+027C   0A??           00979         INCF    rx_index, F
+027D   08??           00980         MOVF    rx_index, W
+027E   3C0F           00981         SUBLW   0x0F
+027F   1803           00982         BTFSC   STATUS, C
+0280   0008           00983 RETURN
+0281   01??           00984         CLRF    rx_index        
+0282   0008           00985 RETURN
+                      00986 
+                      00987 
+                      00988 
+                      00989 EEPROM   CODE  0xF000
+F000   0000 0000      00990         DE      0x00, 0x00
+084C 1EFC             00991 END
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 21
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ABDEN                             00000000
+ABDOVF                            00000007
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACKTIM                            00000007
+ADCON0                            0000009D
+ADCON1                            0000009E
+ADCS0                             00000004
+ADCS1                             00000005
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADFVR0                            00000000
+ADFVR1                            00000001
+ADGO                              00000001
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADPREF0                           00000000
+ADPREF1                           00000001
+ADRES                             0000009B
+ADRESH                            0000009C
+ADRESL                            0000009B
+AHEN                              00000001
+AN0                               00000000
+AN1                               00000001
+AN2                               00000002
+AN3                               00000004
+AN4                               00000000
+AN5                               00000001
+AN6                               00000002
+AN7                               00000003
+ANSA0                             00000000
+ANSA1                             00000001
+ANSA2                             00000002
+ANSA4                             00000004
+ANSC0                             00000000
+ANSC1                             00000001
+ANSC2                             00000002
+ANSC3                             00000003
+ANSELA                            0000018C
+ANSELC                            0000018E
+APFCON                            0000011D
+APFCON0                           0000011D
+AREA_CAP6_AN6_IN                  RC2
+BAUDCON                           0000019F
+BCL1IE                            00000003
+BCL1IF                            00000003
+BEACON_DATA                       00000006
+BEACON_ON                         00000007
+BF                                00000000
+BOEN                              00000004
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 22
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BORCON                            00000116
+BORRDY                            00000000
+BRG16                             00000003
+BRGH                              00000002
+BSR                               00000008
+BSR0                              00000000
+BSR1                              00000001
+BSR2                              00000002
+BSR3                              00000003
+BSR4                              00000004
+BSR_SHAD                          00000FE6
+BUTTONS_LOCKED                    00000004
+BUTTON_BEACON                     00000001
+BUTTON_KEY                        00000002
+BUTTON_RF_POWER                   00000000
+BUTTON_SENSOR_AREA                00000003
+Broadcast_packet                  000000DD
+C                                 00000000
+C12IN0N                           00000001
+C12IN1N                           00000001
+C12IN2N                           00000002
+C12IN3N                           00000003
+C1HYS                             00000001
+C1IE                              00000005
+C1IF                              00000005
+C1INP                             00000000
+C1INTN                            00000006
+C1INTP                            00000007
+C1NCH0                            00000000
+C1NCH1                            00000001
+C1OE                              00000005
+C1ON                              00000007
+C1OUT_CM1CON0                     00000006
+C1OUT_PORTA                       00000002
+C1PCH0                            00000004
+C1PCH1                            00000005
+C1POL                             00000004
+C1SP                              00000002
+C1SYNC                            00000000
+C2HYS                             00000001
+C2IE                              00000006
+C2IF                              00000006
+C2INP                             00000000
+C2INTN                            00000006
+C2INTP                            00000007
+C2NCH0                            00000000
+C2NCH1                            00000001
+C2OE                              00000005
+C2ON                              00000007
+C2OUT_CM2CON0                     00000006
+C2OUT_PORTC                       00000004
+C2PCH0                            00000004
+C2PCH1                            00000005
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 23
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+C2POL                             00000004
+C2SP                              00000002
+C2SYNC                            00000000
+CCP1                              00000005
+CCP1AS                            00000295
+CCP1AS0                           00000004
+CCP1AS1                           00000005
+CCP1AS2                           00000006
+CCP1ASE                           00000007
+CCP1CON                           00000293
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1SEL                           00000000
+CCPR1H                            00000292
+CCPR1L                            00000291
+CDAFVR0                           00000002
+CDAFVR1                           00000003
+CFGS                              00000006
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CHS4                              00000006
+CKE                               00000006
+CKP                               00000004
+CK_PORTA                          00000000
+CK_PORTC                          00000004
+CLKIN                             00000005
+CLKOUT                            00000004
+CLKR                              00000004
+CLKRCON                           0000039A
+CLKRDC0                           00000003
+CLKRDC1                           00000004
+CLKRDIV0                          00000000
+CLKRDIV1                          00000001
+CLKRDIV2                          00000002
+CLKREN                            00000007
+CLKROE                            00000006
+CLKRSLR                           00000005
+CM1CON0                           00000111
+CM1CON1                           00000112
+CM2CON0                           00000113
+CM2CON1                           00000114
+CMOUT                             00000115
+CPS0                              00000000
+CPS1                              00000001
+CPS2                              00000002
+CPS3                              00000004
+CPS4                              00000000
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 24
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CPS5                              00000001
+CPS6                              00000002
+CPS7                              00000003
+CPSCH0                            00000000
+CPSCH1                            00000001
+CPSCH2                            00000002
+CPSCH3                            00000003
+CPSCON0                           0000001E
+CPSCON1                           0000001F
+CPSON                             00000007
+CPSOUT                            00000001
+CPSRM                             00000006
+CPSRNG0                           00000002
+CPSRNG1                           00000003
+CREN                              00000004
+CSRC                              00000007
+C_SHAD                            00000000
+Check_char                        000001CA
+Check_if_AOK                      00000198
+Check_if_CMD                      000001B1
+Check_if_END                      0000017F
+Clear_average                     00000246
+Close_UART                        00000204
+Convert_num_to_char               00000000
+DACCON0                           00000118
+DACCON1                           00000119
+DACEN                             00000007
+DACLPS                            00000006
+DACOE                             00000005
+DACOUT                            00000000
+DACPSS0                           00000002
+DACPSS1                           00000003
+DACR0                             00000000
+DACR1                             00000001
+DACR2                             00000002
+DACR3                             00000003
+DACR4                             00000004
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC_SHAD                           00000001
+DHEN                              00000000
+DIVV24                            00000000
+DT_PORTA                          00000001
+DT_PORTC                          00000005
+D_NOT_A                           00000005
+Difference                        000000B9
+Do_normal                         0000007C
+ECCP1AS                           00000295
+EEADR                             00000191
+EEADRH                            00000192
+EEADRL                            00000191
+EECON1                            00000195
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 25
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+EECON2                            00000196
+EEDAT                             00000193
+EEDATH                            00000194
+EEDATL                            00000193
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FERR                              00000002
+FLT0                              00000002
+FREE                              00000004
+FSR0                              00000004
+FSR0H                             00000005
+FSR0H_SHAD                        00000FE9
+FSR0L                             00000004
+FSR0L_SHAD                        00000FE8
+FSR1                              00000006
+FSR1H                             00000007
+FSR1H_SHAD                        00000FEB
+FSR1L                             00000006
+FSR1L_SHAD                        00000FEA
+FVRCON                            00000117
+FVREN                             00000007
+FVRRDY                            00000006
+GCEN                              00000007
+GIE                               00000007
+GO                                00000001
+GO_NOT_DONE                       00000001
+Go_sleep_CPU                      00000222
+HFIOFL                            00000003
+HFIOFR                            00000004
+HFIOFS                            00000000
+INDF0                             00000000
+INDF1                             00000001
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOCAF                             00000393
+IOCAF0                            00000000
+IOCAF1                            00000001
+IOCAF2                            00000002
+IOCAF3                            00000003
+IOCAF4                            00000004
+IOCAF5                            00000005
+IOCAN                             00000392
+IOCAN0                            00000000
+IOCAN1                            00000001
+IOCAN2                            00000002
+IOCAN3                            00000003
+IOCAN4                            00000004
+IOCAN5                            00000005
+IOCAP                             00000391
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 26
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+IOCAP0                            00000000
+IOCAP1                            00000001
+IOCAP2                            00000002
+IOCAP3                            00000003
+IOCAP4                            00000004
+IOCAP5                            00000005
+IOCIE                             00000003
+IOCIF                             00000000
+IRCF0                             00000003
+IRCF1                             00000004
+IRCF2                             00000005
+IRCF3                             00000006
+Increase_index                    000000A9
+Init_Cap_Touch                    00000242
+Init_and_start_timers             0000021C
+Insert_byte_to_tx_buff            00000162
+Insert_register_to_tx_buff        00000158
+Jump_over_RESET                   00000271
+Jump_over_UART_Rx_interrupt       0000000A
+Jump_over_percent                 000000A7
+Jump_over_sign                    00000055
+Jump_over_sign_subtract           00000068
+LATA                              0000010C
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA4                             00000004
+LATA5                             00000005
+LATC                              0000010E
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC3                             00000003
+LATC4                             00000004
+LATC5                             00000005
+LED_BLUE                          RA1
+LFIOFR                            00000001
+LWLO                              00000005
+Log_and_RESET                     0000026D
+MC1OUT                            00000000
+MC2OUT                            00000001
+MCLR_RA3_IN                       RA3
+MDBIT                             00000000
+MDCARH                            0000039F
+MDCARL                            0000039E
+MDCH0                             00000000
+MDCH1                             00000001
+MDCH2                             00000002
+MDCH3                             00000003
+MDCHODIS                          00000007
+MDCHPOL                           00000006
+MDCHSYNC                          00000005
+MDCIN1                            00000002
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 27
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+MDCIN2                            00000005
+MDCL0                             00000000
+MDCL1                             00000001
+MDCL2                             00000002
+MDCL3                             00000003
+MDCLODIS                          00000007
+MDCLPOL                           00000006
+MDCLSYNC                          00000005
+MDCON                             0000039C
+MDEN                              00000007
+MDMIN                             00000003
+MDMS0                             00000000
+MDMS1                             00000001
+MDMS2                             00000002
+MDMS3                             00000003
+MDMSODIS                          00000007
+MDOE                              00000006
+MDOPOL                            00000004
+MDOUT_MDCON                       00000003
+MDOUT_PORTC                       00000004
+MDSLR                             00000005
+MDSRC                             0000039D
+MFIOFR                            00000002
+MULV16_24                         00000000
+Measure_supply_voltage            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_MCLR                          00000003
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RI                            00000002
+NOT_RMCLR                         00000003
+NOT_SS                            00000003
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_WPUEN                         00000007
+Negative_result                   00000085
+Nekonecna_slucka                  0000003E
+OERR                              00000001
+OPTION_REG                        00000095
+OSC1                              00000005
+OSC2                              00000004
+OSCCON                            00000099
+OSCSTAT                           0000009A
+OSCTUNE                           00000098
+OSFIE                             00000007
+OSFIF                             00000007
+OSTS                              00000005
+Open_UART                         000001DD
+P                                 00000004
+P1A                               00000005
+P1B                               00000004
+P1BSEL                            00000001
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 28
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+P1C                               00000003
+P1D                               00000002
+P1DC0                             00000000
+P1DC1                             00000001
+P1DC2                             00000002
+P1DC3                             00000003
+P1DC4                             00000004
+P1DC5                             00000005
+P1DC6                             00000006
+P1M0                              00000006
+P1M1                              00000007
+P1RSEN                            00000007
+PCIE                              00000006
+PCL                               00000002
+PCLATH                            0000000A
+PCLATH_SHAD                       00000FE7
+PCON                              00000096
+PEIE                              00000006
+PEN                               00000002
+PIE1                              00000091
+PIE2                              00000092
+PIR1                              00000011
+PIR2                              00000012
+PLLR                              00000006
+PORTA                             0000000C
+PORTC                             0000000E
+PR2                               0000001B
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSS1AC0                           00000002
+PSS1AC1                           00000003
+PSS1BD0                           00000000
+PSS1BD1                           00000001
+PSTR1CON                          00000296
+PWM1CON                           00000294
+Positive_result                   0000008C
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 29
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RCIF                              00000005
+RCREG                             00000199
+RCSTA                             0000019D
+RD                                00000000
+RESULT24                          00000000
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+RXDTSEL                           00000007
+RX_PORTA                          00000001
+RX_PORTC                          00000005
+R_NOT_W                           00000002
+Released                          000000D1
+Reset_and_start_timers            00000216
+Reset_timers                      000000CB
+S                                 00000003
+SBCDE                             00000002
+SBOREN                            00000007
+SCIE                              00000005
+SCK                               00000000
+SCKP                              00000004
+SCL                               00000000
+SCS0                              00000000
+SCS1                              00000001
+SDA                               00000001
+SDAHT                             00000003
+SDI                               00000001
+SDO1SEL                           00000006
+SDOSEL                            00000006
+SDO_PORTA                         00000004
+SDO_PORTC                         00000002
+SEN                               00000000
+SENDB                             00000003
+SMP                               00000007
+SPBRG                             0000019B
+SPBRGH                            0000019C
+SPBRGL                            0000019B
+SPEN                              00000007
+SPLLEN                            00000007
+SRCLK0                            00000004
+SRCLK1                            00000005
+SRCLK2                            00000006
+SRCON0                            0000011A
+SRCON1                            0000011B
+SREN                              00000005
+SRI                               00000001
+SRLEN                             00000007
+SRNQ                              00000004
+SRNQEN                            00000002
+SRPR                              00000000
+SRPS                              00000001
+SRQ                               00000002
+SRQEN                             00000003
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 30
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SRRC1E                            00000000
+SRRC2E                            00000001
+SRRCKE                            00000002
+SRRPE                             00000003
+SRSC1E                            00000004
+SRSC2E                            00000005
+SRSCKE                            00000006
+SRSPE                             00000007
+SS1SEL                            00000005
+SSP1ADD                           00000212
+SSP1BUF                           00000211
+SSP1CON1                          00000215
+SSP1CON2                          00000216
+SSP1CON3                          00000217
+SSP1IE                            00000003
+SSP1IF                            00000003
+SSP1MSK                           00000213
+SSP1STAT                          00000214
+SSPADD                            00000212
+SSPBUF                            00000211
+SSPCON                            00000215
+SSPCON1                           00000215
+SSPCON2                           00000216
+SSPCON3                           00000217
+SSPEN                             00000005
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPMSK                            00000213
+SSPOV                             00000006
+SSPSTAT                           00000214
+SSSEL                             00000005
+START                             0000000B
+STATUS                            00000003
+STATUS_SHAD                       00000FE4
+STAV_AVERAGE_ZNAMIENKO            00000003
+STAV_FIRST_TIME                   00000002
+STAV_KEY_PUSHED                   00000004
+STAV_TOUCH_MEASURE_DONE           00000000
+STAV_ZNAMIENKO                    00000001
+STKOVF                            00000007
+STKPTR                            00000FED
+STKUNF                            00000006
+STR1A                             00000000
+STR1B                             00000001
+STR1C                             00000002
+STR1D                             00000003
+STR1SYNC                          00000004
+SWDTEN                            00000000
+SYNC                              00000004
+Save_current_raw_value            000000C4
+Send_A_cmd                        0000010D
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 31
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+Send_N_cmd                        00000131
+Send_R_cmd                        000000F9
+Send_change_command               000000CD
+Send_char                         00000170
+Send_next_char_A                  0000012B
+Send_next_char_N                  00000152
+Send_next_char_R                  00000107
+Sensor_area_action_touch          000000D3
+Sensor_area_action_untouch        000000D8
+Snimac_dotyku                     00000042
+Subtract_because_of_sign          00000064
+T0CKI                             00000002
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T0XCS                             00000000
+T1CKI                             00000005
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000018
+T1GCON                            00000019
+T1GGO                             00000003
+T1GGO_NOT_DONE                    00000003
+T1GPOL                            00000006
+T1GSEL                            00000003
+T1GSPM                            00000004
+T1GSS0                            00000000
+T1GSS1                            00000001
+T1GTM                             00000005
+T1GVAL                            00000002
+T1OSCEN                           00000003
+T1OSCR                            00000007
+T1OSI                             00000005
+T1OSO                             00000004
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             0000001C
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+TEMPX24                           00000000
+TEMPY16                           00000000
+TEMPY24                           00000000
+TMR0                              00000015
+TMR0CS                            00000005
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0SE                            00000004
+TMR1                              00000016
+TMR1CS0                           00000006
+TMR1CS1                           00000007
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 32
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TMR1GE                            00000007
+TMR1GIE                           00000007
+TMR1GIF                           00000007
+TMR1H                             00000017
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             00000016
+TMR1ON                            00000000
+TMR2                              0000001A
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOSH                              00000FEF
+TOSL                              00000FEE
+TRISA                             0000008C
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISC                             0000008E
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRMT                              00000001
+TSEN                              00000005
+TSRNG                             00000004
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TUN5                              00000005
+TX9                               00000006
+TX9D                              00000000
+TXCKSEL                           00000002
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             0000019A
+TXSTA                             0000019E
+TX_PORTA                          00000000
+TX_PORTC                          00000004
+UA                                00000001
+UART_CTS_IN                       RA2
+UART_RTS_OUT                      RA4
+UART_RX_IN                        RC5
+UART_Rx_interrupt                 00000274
+UART_TX_OUT                       RC4
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 33
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+W                                 00000000
+WAKE_HW_OUT                       RA5
+WAKE_SW_OUT                       RC3
+WCOL                              00000007
+WDTCON                            00000097
+WDTPS0                            00000001
+WDTPS1                            00000002
+WDTPS2                            00000003
+WDTPS3                            00000004
+WDTPS4                            00000005
+WPUA                              0000020C
+WPUA0                             00000000
+WPUA1                             00000001
+WPUA2                             00000002
+WPUA3                             00000003
+WPUA4                             00000004
+WPUA5                             00000005
+WPUC                              0000020E
+WPUC0                             00000000
+WPUC1                             00000001
+WPUC2                             00000002
+WPUC3                             00000003
+WPUC4                             00000004
+WPUC5                             00000005
+WR                                00000001
+WREG                              00000009
+WREG_SHAD                         00000FE5
+WREN                              00000002
+WRERR                             00000003
+WUE                               00000001
+Wait_128ms                        00000000
+Wait_16ms                         00000000
+Wait_256ms                        00000000
+Wait_32ms                         00000000
+Wait_512ms                        00000000
+Wait_64ms                         00000000
+Wait_for_CTS                      00000174
+Wait_for_free_buffer              00000178
+Wait_for_rx_data                  000001CF
+Waiting_for_rx_data               000001D4
+Z                                 00000002
+Z_SHAD                            00000002
+_BOREN_NSLEEP                     0000FDFF
+_BOREN_OFF                        0000F9FF
+_BOREN_ON                         0000FFFF
+_BOREN_SBODEN                     0000FBFF
+_BORV_19                          0000FFFF
+_BORV_25                          0000FBFF
+_CLKOUTEN_OFF                     0000FFFF
+_CLKOUTEN_ON                      0000F7FF
+_CONFIG1                          00008007
+_CONFIG2                          00008008
+_CPD_OFF                          0000FFFF
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 34
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_CPD_ON                           0000FEFF
+_CP_OFF                           0000FFFF
+_CP_ON                            0000FF7F
+_DEVID1                           00008006
+_FCMEN_OFF                        0000DFFF
+_FCMEN_ON                         0000FFFF
+_FOSC_ECH                         0000FFFF
+_FOSC_ECL                         0000FFFD
+_FOSC_ECM                         0000FFFE
+_FOSC_EXTRC                       0000FFFB
+_FOSC_HS                          0000FFFA
+_FOSC_INTOSC                      0000FFFC
+_FOSC_LP                          0000FFF8
+_FOSC_XT                          0000FFF9
+_IDLOC0                           00008000
+_IDLOC1                           00008001
+_IDLOC2                           00008002
+_IDLOC3                           00008003
+_IESO_OFF                         0000EFFF
+_IESO_ON                          0000FFFF
+_LVP_OFF                          0000DFFF
+_LVP_ON                           0000FFFF
+_MCLRE_OFF                        0000FFBF
+_MCLRE_ON                         0000FFFF
+_PLLEN_OFF                        0000FEFF
+_PLLEN_ON                         0000FFFF
+_PWRTE_OFF                        0000FFFF
+_PWRTE_ON                         0000FFDF
+_STVREN_OFF                       0000FDFF
+_STVREN_ON                        0000FFFF
+_WDTE_NSLEEP                      0000FFF7
+_WDTE_OFF                         0000FFE7
+_WDTE_ON                          0000FFFF
+_WDTE_SWDTEN                      0000FFEF
+_WRT_ALL                          0000FFFC
+_WRT_BOOT                         0000FFFE
+_WRT_HALF                         0000FFFD
+_WRT_OFF                          0000FFFF
+__16F1823                         00000001
+ad_value                          00000000
+average                           00000030
+average_index                     00000078
+buttons                           00000036
+current_average                   00000074
+last_char_rx                      0000007D
+log                               00000038
+percent                           0000007A
+raw                               00000072
+rx_index                          0000007C
+sensor                            00000037
+start_counter                     00000079
+stav                              00000071
+temp                              00000076
+MPASM  5.51                   16F1823TMPO.ASM   3-30-2016  19:27:50         PAGE 35
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+tx_index                          00000035
+uart_rx_buff                      00000050
+uart_tx_buff                      00000060
+xwait                             00000032
+
+Errors   :     0
+Warnings :     0 reported,    61 suppressed
+Messages :     0 reported,    59 suppressed
+
+

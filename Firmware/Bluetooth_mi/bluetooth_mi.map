@@ -1,0 +1,224 @@
+MPLINK 4.49, Linker
+Linker Map File - Created Wed Mar 30 19:27:52 2016
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                    BEGIN       code   0x000000    program   0x000002
+                   .cinit    romdata   0x000001    program   0x000004
+                      ISR       code   0x000004    program   0x0004fe
+                    .code       code   0x000283    program   0x00019a
+.config_8007_16F1823TMPO.O       code   0x008007    program   0x000002
+.config_8008_16F1823TMPO.O       code   0x008008    program   0x000002
+                   EEPROM       code   0x00f000    program   0x000004
+                 HELP_VAR      udata   0x000020       data   0x000010
+                 TEMP_VAR      udata   0x000030       data   0x000009
+                 UART_VAR      udata   0x000050       data   0x000020
+                  INT_VAR      udata   0x000071       data   0x00000d
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000002      
+                            0x000004    0x00034f      
+                            0x008007    0x008008      
+                            0x00f000    0x00f001      
+            851 out of 2311 program addresses used, program memory utilization is 36%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                    ADD24   0x0002b0    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                 ADD24BIS   0x0002b7    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+         Broadcast_packet   0x0000dd    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                   COUNTX   0x0002f4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+     Cakaj_za_AD_prevodom   0x0002a4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Check_char   0x0001ca    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Check_if_AOK   0x000198    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Check_if_CMD   0x0001b1    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Check_if_END   0x00017f    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            Clear_average   0x000246    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Close_UART   0x000204    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+      Convert_num_to_char   0x00033f    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               DIVU24LOOP   0x0002ef    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                   DIVV24   0x0002d6    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Difference   0x0000b9    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                Do_normal   0x00007c    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                   FINALX   0x0002fa    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+             Go_sleep_CPU   0x000222    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+           Increase_index   0x0000a9    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+           Init_Cap_Touch   0x000242    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+    Init_and_start_timers   0x00021c    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+   Insert_byte_to_tx_buff   0x000162    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+Insert_register_to_tx_buff   0x000158    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          Jump_over_RESET   0x000271    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+Jump_over_UART_Rx_interrupt   0x00000a    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+        Jump_over_percent   0x0000a7    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+           Jump_over_sign   0x000055    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+  Jump_over_sign_subtract   0x000068    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            Log_and_RESET   0x00026d    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            MULU16_24LOOP   0x0002c1    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                MULV16_24   0x0002be    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+   Measure_supply_voltage   0x000283    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+          Negative_result   0x000085    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Nekonecna_slucka   0x00003e    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                Open_UART   0x0001dd    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          Positive_result   0x00008c    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                 Released   0x0000d1    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+   Reset_and_start_timers   0x000216    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Reset_timers   0x0000cb    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               SHIFT_IT24   0x0002e6    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                    START   0x00000b    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                    SUB24   0x0002cf    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+   Save_current_raw_value   0x0000c4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Send_A_cmd   0x00010d    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Send_N_cmd   0x000131    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Send_R_cmd   0x0000f9    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+      Send_change_command   0x0000cd    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                Send_char   0x000170    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Send_next_char_A   0x00012b    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Send_next_char_N   0x000152    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Send_next_char_R   0x000107    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+ Sensor_area_action_touch   0x0000d3    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+Sensor_area_action_untouch   0x0000d8    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            Snimac_dotyku   0x000042    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+ Subtract_because_of_sign   0x000064    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+        UART_Rx_interrupt   0x000274    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Wait_128ms   0x00030f    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                Wait_16ms   0x000335    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Wait_256ms   0x000318    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                Wait_32ms   0x00032b    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Wait_512ms   0x000306    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                Wait_64ms   0x000321    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+             Wait_for_CTS   0x000174    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+     Wait_for_free_buffer   0x000178    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Wait_for_rx_data   0x0001cf    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+      Waiting_for_rx_data   0x0001d4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          WatchDog_enable   0x000303    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+        ZERO_TEST_SKIPPED   0x0002df    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                    IDX24   0x00002b       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                 RESULT24   0x000028       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  TEMPX24   0x000020       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  TEMPY16   0x000023       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  TEMPY24   0x000025       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                 ad_value   0x00002e       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  average   0x000030       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            average_index   0x000078       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                  buttons   0x000036       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          current_average   0x000074       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             last_char_rx   0x00007d       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                      log   0x000038       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                  percent   0x00007a       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                      raw   0x000072       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                 rx_index   0x00007c       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                   sensor   0x000037       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            start_counter   0x000079       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                     stav   0x000071       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                     temp   0x000076       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                 tx_index   0x000035       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             uart_rx_buff   0x000050       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             uart_tx_buff   0x000060       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                    xwait   0x000032       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+Jump_over_UART_Rx_interrupt   0x00000a    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                    START   0x00000b    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Nekonecna_slucka   0x00003e    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            Snimac_dotyku   0x000042    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+           Jump_over_sign   0x000055    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+ Subtract_because_of_sign   0x000064    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+  Jump_over_sign_subtract   0x000068    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                Do_normal   0x00007c    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          Negative_result   0x000085    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          Positive_result   0x00008c    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+        Jump_over_percent   0x0000a7    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+           Increase_index   0x0000a9    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Difference   0x0000b9    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+   Save_current_raw_value   0x0000c4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Reset_timers   0x0000cb    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+      Send_change_command   0x0000cd    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                 Released   0x0000d1    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+ Sensor_area_action_touch   0x0000d3    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+Sensor_area_action_untouch   0x0000d8    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Broadcast_packet   0x0000dd    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Send_R_cmd   0x0000f9    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Send_next_char_R   0x000107    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Send_A_cmd   0x00010d    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Send_next_char_A   0x00012b    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Send_N_cmd   0x000131    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Send_next_char_N   0x000152    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+Insert_register_to_tx_buff   0x000158    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+   Insert_byte_to_tx_buff   0x000162    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                Send_char   0x000170    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Wait_for_CTS   0x000174    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+     Wait_for_free_buffer   0x000178    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Check_if_END   0x00017f    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Check_if_AOK   0x000198    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Check_if_CMD   0x0001b1    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Check_char   0x0001ca    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+         Wait_for_rx_data   0x0001cf    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+      Waiting_for_rx_data   0x0001d4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                Open_UART   0x0001dd    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+               Close_UART   0x000204    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+   Reset_and_start_timers   0x000216    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+    Init_and_start_timers   0x00021c    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             Go_sleep_CPU   0x000222    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+           Init_Cap_Touch   0x000242    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            Clear_average   0x000246    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            Log_and_RESET   0x00026d    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          Jump_over_RESET   0x000271    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+        UART_Rx_interrupt   0x000274    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+   Measure_supply_voltage   0x000283    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+     Cakaj_za_AD_prevodom   0x0002a4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                    ADD24   0x0002b0    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                 ADD24BIS   0x0002b7    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                MULV16_24   0x0002be    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+            MULU16_24LOOP   0x0002c1    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                    SUB24   0x0002cf    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                   DIVV24   0x0002d6    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+        ZERO_TEST_SKIPPED   0x0002df    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               SHIFT_IT24   0x0002e6    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               DIVU24LOOP   0x0002ef    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                   COUNTX   0x0002f4    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                   FINALX   0x0002fa    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+          WatchDog_enable   0x000303    program     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Wait_512ms   0x000306    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Wait_128ms   0x00030f    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+               Wait_256ms   0x000318    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                Wait_64ms   0x000321    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                Wait_32ms   0x00032b    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                Wait_16ms   0x000335    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+      Convert_num_to_char   0x00033f    program     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  TEMPX24   0x000020       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  TEMPY16   0x000023       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  TEMPY24   0x000025       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                 RESULT24   0x000028       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                    IDX24   0x00002b       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                 ad_value   0x00002e       data     extern C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\helpers.asm
+                  average   0x000030       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                    xwait   0x000032       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                 tx_index   0x000035       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                  buttons   0x000036       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                   sensor   0x000037       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                      log   0x000038       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             uart_rx_buff   0x000050       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             uart_tx_buff   0x000060       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                     stav   0x000071       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                      raw   0x000072       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+          current_average   0x000074       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                     temp   0x000076       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            average_index   0x000078       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+            start_counter   0x000079       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                  percent   0x00007a       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+                 rx_index   0x00007c       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+             last_char_rx   0x00007d       data     static C:\Users\Widlak\Desktop\BlueCap\Firmware\Bluetooth_mi\16F1823TMPO.ASM
+
+

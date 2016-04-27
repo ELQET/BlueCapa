@@ -1,0 +1,25 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="eu.elqet.BlueCapa.MainActivity">
+    <item
+        android:id="@+id/action_settings"
+        android:orderInCategory="100"
+        android:title="@string/stringActionSettings"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_scan"
+        android:orderInCategory="100"
+        android:title="@string/stringActionStartScanAddNew"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_clean_scan"
+        android:orderInCategory="100"
+        android:title="@string/stringActionCleanAndScanNew"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_show"
+        android:orderInCategory="100"
+        android:title="@string/stringActionShowList"
+        app:showAsAction="never" />
+</menu>

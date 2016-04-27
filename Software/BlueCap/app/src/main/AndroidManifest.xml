@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="eu.elqet.BlueCapa">
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.RECORD_VIDEO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.FLASHLIGHT" />
+
+    <uses-feature android:name="android.hardware.camera" />
+    <uses-feature
+        android:name="android.hardware.camera.flash"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="false" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/stringAppName"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name="eu.elqet.BlueCapa.MainActivity"
+            android:label="@string/stringAppName"
+            android:theme="@style/AppTheme.NoActionBar">
+            <intent-filter android:label="@string/stringAppName">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="www.elqet.sk"
+                    android:pathPrefix="/gizmos"
+                    android:scheme="http" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="eu.elqet.BlueCapa.BluetoothInit"
+            android:label="@string/stringBleInitTitle" />
+
+        <activity
+            android:name="eu.elqet.BlueCapa.ListActivity"
+            android:label="@string/stringListActivityTitle" />
+        <activity
+            android:name="eu.elqet.BlueCapa.LogListActivity"
+            android:label="@string/stringLogListActivityTitle" />
+        <activity
+            android:name="eu.elqet.BlueCapa.DeviceActivity"
+            android:label="@string/stringListDeviceTitle" />
+        <activity
+            android:name="eu.elqet.BlueCapa.SettingsActivity"
+            android:label="@string/stringSettingsTitle" />
+        <activity
+            android:name="eu.elqet.BlueCapa.CameraActivity"
+            android:label="@string/stringVideoRecordingTitle"
+            android:screenOrientation="landscape" />
+
+        <service android:name="eu.elqet.BlueCapa.ListenService" />
+
+
+    </application>
+
+</manifest>

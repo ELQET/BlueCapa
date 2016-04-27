@@ -1,0 +1,298 @@
+;Created by Matej Baran (c) Copyright
+
+;constants definitions
+    #INCLUDE    <hardware.INC>
+    
+    ;extern variables   
+
+  	;global variables
+	GLOBAL		TEMPX24
+	GLOBAL		TEMPY16
+	GLOBAL		RESULT24
+	GLOBAL		TEMPY24
+	GLOBAL		ad_value
+    
+    ;global functions
+	GLOBAL		Convert_num_to_char
+	GLOBAL		MULV16_24
+	GLOBAL		DIVV24
+    GLOBAL		Measure_supply_voltage	
+	GLOBAL		Wait_16ms
+	GLOBAL		Wait_32ms
+	GLOBAL		Wait_64ms
+	GLOBAL		Wait_128ms
+	GLOBAL		Wait_256ms
+	GLOBAL		Wait_512ms
+    
+HELP_VAR		UDATA			0x20  
+TEMPX24			RES			3
+TEMPY16			RES			2
+TEMPY24			RES			3
+RESULT24		RES			3
+IDX24			RES			3 
+ad_value		RES			2
+ 
+
+CODE
+
+
+Measure_supply_voltage
+;init AD prevodnika - neuplny!
+	BANKSEL ADCON1
+	MOVLW	0xF0  ;right justified, dedicated RC oscillator, positive voltage reference connected to AVdd
+	MOVWF	ADCON1
+	MOVLW	0x7D  ; channel selected on Fixed Voltage Reference (FVR) Buffer 1 Output, AD is On
+	BANKSEL ADCON0
+	MOVWF	ADCON0
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	NOP
+	BANKSEL ADCON0
+	BSF		ADCON0, ADGO ;start AD conversion
+Cakaj_za_AD_prevodom
+	BTFSC	ADCON0, ADGO
+	GOTO	Cakaj_za_AD_prevodom
+	MOVF	ADRESH, W
+	BANKSEL ad_value
+	MOVWF	ad_value+1
+	BANKSEL ADRESL
+	MOVF	ADRESL, W
+	BANKSEL ad_value
+	MOVWF	ad_value
+	BANKSEL ADCON0
+	BCF		ADCON0, ADON ; vypni AD prevodnik -> znizi spotrebu prudu
+; vyrataj napatie U = (1024 * 1,024) / AD_VAL
+; U = 1048,576 / AD_VAL
+RETURN
+
+
+ADD24
+     MOVF TEMPX24,W
+     ADDWF RESULT24
+     MOVF TEMPX24+1,W
+     ADDWFC RESULT24+1
+     MOVF TEMPX24+2,W
+     ADDWFC RESULT24+2
+RETURN
+
+
+ADD24BIS
+	MOVF    TEMPY24, W
+	ADDWF   TEMPX24, F
+	MOVF    TEMPY24+1, W
+	ADDWFC  TEMPX24+1, F
+	MOVF    TEMPY24+2, W
+	ADDWFC  TEMPX24+2, F
+RETURN
+
+
+MULV16_24 
+    CLRF RESULT24
+    CLRF RESULT24+1
+    CLRF RESULT24+2
+MULU16_24LOOP
+    BTFSC TEMPY16,0
+    CALL ADD24
+    LSRF TEMPY16+1,F
+    RRF TEMPY16,F
+    LSLF TEMPX24,F
+    RLF TEMPX24+1,F
+    RLF TEMPX24+2,F
+    MOVF TEMPY16,F
+    BTFSS STATUS,Z
+    GOTO MULU16_24LOOP
+    MOVF TEMPY16+1,F
+    BTFSS STATUS,Z
+    GOTO MULU16_24LOOP
+RETURN
+
+
+SUB24
+	MOVF    TEMPY24, W
+	SUBWF   TEMPX24, F
+	MOVF    TEMPY24+1, W
+	SUBWFB  TEMPX24+1, F
+	MOVF    TEMPY24+2, W
+	SUBWFB  TEMPX24+2, F
+RETURN
+
+DIVV24
+	MOVF TEMPY24, F
+	BTFSS  STATUS, Z
+	GOTO  ZERO_TEST_SKIPPED
+	MOVF TEMPY24+1, F
+	BTFSS  STATUS, Z
+	GOTO  ZERO_TEST_SKIPPED
+	MOVF TEMPY24+2, F
+	BTFSC STATUS, Z
+RETURN
+
+
+ZERO_TEST_SKIPPED
+	MOVLW   0x01
+	MOVWF   IDX24
+	CLRF    IDX24+1
+	CLRF    IDX24+2
+	CLRF    RESULT24
+	CLRF    RESULT24+1
+	CLRF	RESULT24+2
+SHIFT_IT24
+	BTFSC   TEMPY24+2, 0x07
+	GOTO 	DIVU24LOOP
+	LSLF    IDX24, F
+  	RLF     IDX24+1, F
+  	RLF     IDX24+2, F
+  	LSLF    TEMPY24, F
+  	RLF     TEMPY24+1, F
+  	RLF     TEMPY24+2, F
+  	GOTO    SHIFT_IT24
+DIVU24LOOP
+	CALL    SUB24
+	BTFSC   STATUS, C
+	GOTO    COUNTX
+	CALL    ADD24BIS
+	GOTO    FINALX
+COUNTX
+	MOVF    IDX24, W
+	ADDWF   RESULT24
+	MOVF    IDX24+1, W
+	ADDWFC  RESULT24+1
+	MOVF    IDX24+2, W
+	ADDWFC  RESULT24+2
+FINALX
+	LSRF    TEMPY24+2, F
+	RRF     TEMPY24+1, F
+	RRF     TEMPY24, F
+	LSRF    IDX24+2, F
+	RRF     IDX24+1, F
+	RRF     IDX24, F
+	BTFSS   STATUS, C
+	GOTO    DIVU24LOOP
+RETURN
+
+
+WatchDog_enable
+	BANKSEL	WDTCON
+	MOVWF	WDTCON
+RETURN
+
+
+Wait_512ms
+	CLRWDT
+	MOVLW	0x13 ;512ms
+	CALL	WatchDog_enable
+	SLEEP 
+	NOP
+	CLRWDT
+	MOVLW	0x15 ;1s
+	CALL	WatchDog_enable
+RETURN
+
+
+Wait_128ms
+	CLRWDT
+	MOVLW	0x0F ;128ms
+	CALL	WatchDog_enable
+	SLEEP 
+	NOP
+	CLRWDT
+	MOVLW	0x15 ;1s
+	CALL	WatchDog_enable
+RETURN
+
+
+Wait_256ms
+	CLRWDT
+	MOVLW	0x11 ;256ms
+	CALL	WatchDog_enable
+	SLEEP 
+	NOP
+	CLRWDT
+	MOVLW	0x15 ;1s
+	CALL	WatchDog_enable
+RETURN
+
+
+Wait_64ms
+	CLRWDT
+	MOVLW	0x0D ;64ms
+	CALL	WatchDog_enable
+	NOP
+	SLEEP
+	NOP
+	CLRWDT
+	MOVLW	0x15 ;1s
+	CALL	WatchDog_enable	
+RETURN
+
+
+Wait_32ms
+	CLRWDT
+	MOVLW	0x0B ;32ms
+	CALL	WatchDog_enable
+	NOP
+	SLEEP
+	NOP
+	CLRWDT
+	MOVLW	0x15 ;1s
+	CALL	WatchDog_enable	
+RETURN
+
+
+Wait_16ms
+	CLRWDT
+	MOVLW	0x09 ;16ms, 0x07 ;8ms
+	CALL	WatchDog_enable
+	NOP
+	SLEEP
+	NOP
+	CLRWDT
+	MOVLW	0x15 ;1s
+	CALL	WatchDog_enable	
+RETURN
+	
+
+Convert_num_to_char
+	BRW
+	RETLW	'0'
+	RETLW	'1'
+	RETLW	'2'
+	RETLW	'3'
+	RETLW	'4'
+	RETLW	'5'
+	RETLW	'6'
+	RETLW	'7'
+	RETLW	'8'
+	RETLW	'9'
+	RETLW	'A'
+	RETLW	'B'
+	RETLW	'C'
+	RETLW	'D'
+	RETLW	'E'
+	RETLW	'F'
+
+
+
+END

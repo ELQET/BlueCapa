@@ -1,0 +1,1135 @@
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ;constants definitions
+                      00002     #INCLUDE    <hardware.INC>
+                      00001     LIST        P=16F1823         ; list directive to define processor
+                      00002     #INCLUDE    <P16F1823.INC>    ; processor specific variable definitions
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F1823 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      01153         LIST
+                      00003  
+                      00004  
+                      00005    
+                      00006 ;#define LED_RED                                        RA0 
+                      00007 #define LED_BLUE                                RA1
+                      00008 #define UART_CTS_IN                             RA2
+                      00009 #define MCLR_RA3_IN                             RA3
+                      00010 #define UART_RTS_OUT            RA4 
+                      00011 #define WAKE_HW_OUT                     RA5
+                      00012 
+                      00013 ;#define BTN2_CAP4_AN4_IN               RC0 ;an4
+                      00014 ;#define BTN3_CAP5_AN5_IN               RC1 ;an5
+                      00015 #define AREA_CAP6_AN6_IN                RC2 ;an6
+                      00016 
+                      00017 #define WAKE_SW_OUT                             RC3
+                      00018 #define UART_TX_OUT                             RC4
+                      00019 #define UART_RX_IN                              RC5
+                      00020 
+                      00021 
+                      00003     
+                      00004     ;extern variables   
+                      00005 
+                      00006         ;global variables
+  0000                00007         GLOBAL          TEMPX24
+  0000                00008         GLOBAL          TEMPY16
+  0000                00009         GLOBAL          RESULT24
+  0000                00010         GLOBAL          TEMPY24
+  0000                00011         GLOBAL          ad_value
+                      00012     
+                      00013     ;global functions
+  0000                00014         GLOBAL          Convert_num_to_char
+  0000                00015         GLOBAL          MULV16_24
+  0000                00016         GLOBAL          DIVV24
+  0000                00017     GLOBAL              Measure_supply_voltage  
+  0000                00018         GLOBAL          Wait_16ms
+  0000                00019         GLOBAL          Wait_32ms
+  0000                00020         GLOBAL          Wait_64ms
+  0000                00021         GLOBAL          Wait_128ms
+  0000                00022         GLOBAL          Wait_256ms
+  0000                00023         GLOBAL          Wait_512ms
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00024     
+                      00025 HELP_VAR                UDATA                   0x20  
+0020                  00026 TEMPX24                 RES                     3
+0023                  00027 TEMPY16                 RES                     2
+0025                  00028 TEMPY24                 RES                     3
+0028                  00029 RESULT24                RES                     3
+002B                  00030 IDX24                   RES                     3 
+002E                  00031 ad_value                RES                     2
+                      00032  
+                      00033 
+                      00034 CODE
+                      00035 
+                      00036 
+0000                  00037 Measure_supply_voltage
+                      00038 ;init AD prevodnika - neuplny!
+0000   0021           00039         BANKSEL ADCON1
+0001   30F0           00040         MOVLW   0xF0  ;right justified, dedicated RC oscillator, positive voltage reference connected to
+                             AVdd
+0002   009E           00041         MOVWF   ADCON1
+0003   307D           00042         MOVLW   0x7D  ; channel selected on Fixed Voltage Reference (FVR) Buffer 1 Output, AD is On
+0004   0021           00043         BANKSEL ADCON0
+0005   009D           00044         MOVWF   ADCON0
+0006   0000           00045         NOP
+0007   0000           00046         NOP
+0008   0000           00047         NOP
+0009   0000           00048         NOP
+000A   0000           00049         NOP
+000B   0000           00050         NOP
+000C   0000           00051         NOP
+000D   0000           00052         NOP
+000E   0000           00053         NOP
+000F   0000           00054         NOP
+0010   0000           00055         NOP
+0011   0000           00056         NOP
+0012   0000           00057         NOP
+0013   0000           00058         NOP
+0014   0000           00059         NOP
+0015   0000           00060         NOP
+0016   0000           00061         NOP
+0017   0000           00062         NOP
+0018   0000           00063         NOP
+0019   0000           00064         NOP
+001A   0000           00065         NOP
+001B   0000           00066         NOP
+001C   0000           00067         NOP
+001D   0000           00068         NOP
+001E   0000           00069         NOP
+001F   0021           00070         BANKSEL ADCON0
+0020   149D           00071         BSF             ADCON0, ADGO ;start AD conversion
+0021                  00072 Cakaj_za_AD_prevodom
+0021   189D           00073         BTFSC   ADCON0, ADGO
+0022   2???           00074         GOTO    Cakaj_za_AD_prevodom
+0023   081C           00075         MOVF    ADRESH, W
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0024   002?           00076         BANKSEL ad_value
+0025   00??           00077         MOVWF   ad_value+1
+0026   0021           00078         BANKSEL ADRESL
+0027   081B           00079         MOVF    ADRESL, W
+0028   002?           00080         BANKSEL ad_value
+0029   00??           00081         MOVWF   ad_value
+002A   0021           00082         BANKSEL ADCON0
+002B   101D           00083         BCF             ADCON0, ADON ; vypni AD prevodnik -> znizi spotrebu prudu
+                      00084 ; vyrataj napatie U = (1024 * 1,024) / AD_VAL
+                      00085 ; U = 1048,576 / AD_VAL
+002C   0008           00086 RETURN
+                      00087 
+                      00088 
+002D                  00089 ADD24
+002D   08??           00090      MOVF TEMPX24,W
+002E   07??           00091      ADDWF RESULT24
+002F   08??           00092      MOVF TEMPX24+1,W
+0030   3D??           00093      ADDWFC RESULT24+1
+0031   08??           00094      MOVF TEMPX24+2,W
+0032   3D??           00095      ADDWFC RESULT24+2
+0033   0008           00096 RETURN
+                      00097 
+                      00098 
+0034                  00099 ADD24BIS
+0034   08??           00100         MOVF    TEMPY24, W
+0035   07??           00101         ADDWF   TEMPX24, F
+0036   08??           00102         MOVF    TEMPY24+1, W
+0037   3D??           00103         ADDWFC  TEMPX24+1, F
+0038   08??           00104         MOVF    TEMPY24+2, W
+0039   3D??           00105         ADDWFC  TEMPX24+2, F
+003A   0008           00106 RETURN
+                      00107 
+                      00108 
+003B                  00109 MULV16_24 
+003B   01??           00110     CLRF RESULT24
+003C   01??           00111     CLRF RESULT24+1
+003D   01??           00112     CLRF RESULT24+2
+003E                  00113 MULU16_24LOOP
+003E   1800           00114     BTFSC TEMPY16,0
+003F   2???           00115     CALL ADD24
+0040   36??           00116     LSRF TEMPY16+1,F
+0041   0C??           00117     RRF TEMPY16,F
+0042   35??           00118     LSLF TEMPX24,F
+0043   0D??           00119     RLF TEMPX24+1,F
+0044   0D??           00120     RLF TEMPX24+2,F
+0045   08??           00121     MOVF TEMPY16,F
+0046   1D03           00122     BTFSS STATUS,Z
+0047   2???           00123     GOTO MULU16_24LOOP
+0048   08??           00124     MOVF TEMPY16+1,F
+0049   1D03           00125     BTFSS STATUS,Z
+004A   2???           00126     GOTO MULU16_24LOOP
+004B   0008           00127 RETURN
+                      00128 
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00129 
+004C                  00130 SUB24
+004C   08??           00131         MOVF    TEMPY24, W
+004D   02??           00132         SUBWF   TEMPX24, F
+004E   08??           00133         MOVF    TEMPY24+1, W
+004F   3B??           00134         SUBWFB  TEMPX24+1, F
+0050   08??           00135         MOVF    TEMPY24+2, W
+0051   3B??           00136         SUBWFB  TEMPX24+2, F
+0052   0008           00137 RETURN
+                      00138 
+0053                  00139 DIVV24
+0053   08??           00140         MOVF TEMPY24, F
+0054   1D03           00141         BTFSS  STATUS, Z
+0055   2???           00142         GOTO  ZERO_TEST_SKIPPED
+0056   08??           00143         MOVF TEMPY24+1, F
+0057   1D03           00144         BTFSS  STATUS, Z
+0058   2???           00145         GOTO  ZERO_TEST_SKIPPED
+0059   08??           00146         MOVF TEMPY24+2, F
+005A   1903           00147         BTFSC STATUS, Z
+005B   0008           00148 RETURN
+                      00149 
+                      00150 
+005C                  00151 ZERO_TEST_SKIPPED
+005C   3001           00152         MOVLW   0x01
+005D   00??           00153         MOVWF   IDX24
+005E   01??           00154         CLRF    IDX24+1
+005F   01??           00155         CLRF    IDX24+2
+0060   01??           00156         CLRF    RESULT24
+0061   01??           00157         CLRF    RESULT24+1
+0062   01??           00158         CLRF    RESULT24+2
+0063                  00159 SHIFT_IT24
+0063   1B80           00160         BTFSC   TEMPY24+2, 0x07
+0064   2???           00161         GOTO    DIVU24LOOP
+0065   35??           00162         LSLF    IDX24, F
+0066   0D??           00163         RLF     IDX24+1, F
+0067   0D??           00164         RLF     IDX24+2, F
+0068   35??           00165         LSLF    TEMPY24, F
+0069   0D??           00166         RLF     TEMPY24+1, F
+006A   0D??           00167         RLF     TEMPY24+2, F
+006B   2???           00168         GOTO    SHIFT_IT24
+006C                  00169 DIVU24LOOP
+006C   2???           00170         CALL    SUB24
+006D   1803           00171         BTFSC   STATUS, C
+006E   2???           00172         GOTO    COUNTX
+006F   2???           00173         CALL    ADD24BIS
+0070   2???           00174         GOTO    FINALX
+0071                  00175 COUNTX
+0071   08??           00176         MOVF    IDX24, W
+0072   07??           00177         ADDWF   RESULT24
+0073   08??           00178         MOVF    IDX24+1, W
+0074   3D??           00179         ADDWFC  RESULT24+1
+0075   08??           00180         MOVF    IDX24+2, W
+0076   3D??           00181         ADDWFC  RESULT24+2
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0077                  00182 FINALX
+0077   36??           00183         LSRF    TEMPY24+2, F
+0078   0C??           00184         RRF     TEMPY24+1, F
+0079   0C??           00185         RRF     TEMPY24, F
+007A   36??           00186         LSRF    IDX24+2, F
+007B   0C??           00187         RRF     IDX24+1, F
+007C   0C??           00188         RRF     IDX24, F
+007D   1C03           00189         BTFSS   STATUS, C
+007E   2???           00190         GOTO    DIVU24LOOP
+007F   0008           00191 RETURN
+                      00192 
+                      00193 
+0080                  00194 WatchDog_enable
+0080   0021           00195         BANKSEL WDTCON
+0081   0097           00196         MOVWF   WDTCON
+0082   0008           00197 RETURN
+                      00198 
+                      00199 
+0083                  00200 Wait_512ms
+0083   0064           00201         CLRWDT
+0084   3013           00202         MOVLW   0x13 ;512ms
+0085   2???           00203         CALL    WatchDog_enable
+0086   0063           00204         SLEEP 
+0087   0000           00205         NOP
+0088   0064           00206         CLRWDT
+0089   3015           00207         MOVLW   0x15 ;1s
+008A   2???           00208         CALL    WatchDog_enable
+008B   0008           00209 RETURN
+                      00210 
+                      00211 
+008C                  00212 Wait_128ms
+008C   0064           00213         CLRWDT
+008D   300F           00214         MOVLW   0x0F ;128ms
+008E   2???           00215         CALL    WatchDog_enable
+008F   0063           00216         SLEEP 
+0090   0000           00217         NOP
+0091   0064           00218         CLRWDT
+0092   3015           00219         MOVLW   0x15 ;1s
+0093   2???           00220         CALL    WatchDog_enable
+0094   0008           00221 RETURN
+                      00222 
+                      00223 
+0095                  00224 Wait_256ms
+0095   0064           00225         CLRWDT
+0096   3011           00226         MOVLW   0x11 ;256ms
+0097   2???           00227         CALL    WatchDog_enable
+0098   0063           00228         SLEEP 
+0099   0000           00229         NOP
+009A   0064           00230         CLRWDT
+009B   3015           00231         MOVLW   0x15 ;1s
+009C   2???           00232         CALL    WatchDog_enable
+009D   0008           00233 RETURN
+                      00234 
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00235 
+009E                  00236 Wait_64ms
+009E   0064           00237         CLRWDT
+009F   300D           00238         MOVLW   0x0D ;64ms
+00A0   2???           00239         CALL    WatchDog_enable
+00A1   0000           00240         NOP
+00A2   0063           00241         SLEEP
+00A3   0000           00242         NOP
+00A4   0064           00243         CLRWDT
+00A5   3015           00244         MOVLW   0x15 ;1s
+00A6   2???           00245         CALL    WatchDog_enable 
+00A7   0008           00246 RETURN
+                      00247 
+                      00248 
+00A8                  00249 Wait_32ms
+00A8   0064           00250         CLRWDT
+00A9   300B           00251         MOVLW   0x0B ;32ms
+00AA   2???           00252         CALL    WatchDog_enable
+00AB   0000           00253         NOP
+00AC   0063           00254         SLEEP
+00AD   0000           00255         NOP
+00AE   0064           00256         CLRWDT
+00AF   3015           00257         MOVLW   0x15 ;1s
+00B0   2???           00258         CALL    WatchDog_enable 
+00B1   0008           00259 RETURN
+                      00260 
+                      00261 
+00B2                  00262 Wait_16ms
+00B2   0064           00263         CLRWDT
+00B3   3009           00264         MOVLW   0x09 ;16ms, 0x07 ;8ms
+00B4   2???           00265         CALL    WatchDog_enable
+00B5   0000           00266         NOP
+00B6   0063           00267         SLEEP
+00B7   0000           00268         NOP
+00B8   0064           00269         CLRWDT
+00B9   3015           00270         MOVLW   0x15 ;1s
+00BA   2???           00271         CALL    WatchDog_enable 
+00BB   0008           00272 RETURN
+                      00273         
+                      00274 
+00BC                  00275 Convert_num_to_char
+00BC   000B           00276         BRW
+00BD   3430           00277         RETLW   '0'
+00BE   3431           00278         RETLW   '1'
+00BF   3432           00279         RETLW   '2'
+00C0   3433           00280         RETLW   '3'
+00C1   3434           00281         RETLW   '4'
+00C2   3435           00282         RETLW   '5'
+00C3   3436           00283         RETLW   '6'
+00C4   3437           00284         RETLW   '7'
+00C5   3438           00285         RETLW   '8'
+00C6   3439           00286         RETLW   '9'
+00C7   3441           00287         RETLW   'A'
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00C8   3442           00288         RETLW   'B'
+00C9   3443           00289         RETLW   'C'
+00CA   3444           00290         RETLW   'D'
+00CB   3445           00291         RETLW   'E'
+00CC   3446           00292         RETLW   'F'
+                      00293 
+                      00294 
+                      00295 
+                      00296 END
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ABDEN                             00000000
+ABDOVF                            00000007
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ACKTIM                            00000007
+ADCON0                            0000009D
+ADCON1                            0000009E
+ADCS0                             00000004
+ADCS1                             00000005
+ADCS2                             00000006
+ADD24                             0000002D
+ADD24BIS                          00000034
+ADDEN                             00000003
+ADFM                              00000007
+ADFVR0                            00000000
+ADFVR1                            00000001
+ADGO                              00000001
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADPREF0                           00000000
+ADPREF1                           00000001
+ADRES                             0000009B
+ADRESH                            0000009C
+ADRESL                            0000009B
+AHEN                              00000001
+AN0                               00000000
+AN1                               00000001
+AN2                               00000002
+AN3                               00000004
+AN4                               00000000
+AN5                               00000001
+AN6                               00000002
+AN7                               00000003
+ANSA0                             00000000
+ANSA1                             00000001
+ANSA2                             00000002
+ANSA4                             00000004
+ANSC0                             00000000
+ANSC1                             00000001
+ANSC2                             00000002
+ANSC3                             00000003
+ANSELA                            0000018C
+ANSELC                            0000018E
+APFCON                            0000011D
+APFCON0                           0000011D
+AREA_CAP6_AN6_IN                  RC2
+BAUDCON                           0000019F
+BCL1IE                            00000003
+BCL1IF                            00000003
+BF                                00000000
+BOEN                              00000004
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BORCON                            00000116
+BORRDY                            00000000
+BRG16                             00000003
+BRGH                              00000002
+BSR                               00000008
+BSR0                              00000000
+BSR1                              00000001
+BSR2                              00000002
+BSR3                              00000003
+BSR4                              00000004
+BSR_SHAD                          00000FE6
+C                                 00000000
+C12IN0N                           00000001
+C12IN1N                           00000001
+C12IN2N                           00000002
+C12IN3N                           00000003
+C1HYS                             00000001
+C1IE                              00000005
+C1IF                              00000005
+C1INP                             00000000
+C1INTN                            00000006
+C1INTP                            00000007
+C1NCH0                            00000000
+C1NCH1                            00000001
+C1OE                              00000005
+C1ON                              00000007
+C1OUT_CM1CON0                     00000006
+C1OUT_PORTA                       00000002
+C1PCH0                            00000004
+C1PCH1                            00000005
+C1POL                             00000004
+C1SP                              00000002
+C1SYNC                            00000000
+C2HYS                             00000001
+C2IE                              00000006
+C2IF                              00000006
+C2INP                             00000000
+C2INTN                            00000006
+C2INTP                            00000007
+C2NCH0                            00000000
+C2NCH1                            00000001
+C2OE                              00000005
+C2ON                              00000007
+C2OUT_CM2CON0                     00000006
+C2OUT_PORTC                       00000004
+C2PCH0                            00000004
+C2PCH1                            00000005
+C2POL                             00000004
+C2SP                              00000002
+C2SYNC                            00000000
+CCP1                              00000005
+CCP1AS                            00000295
+CCP1AS0                           00000004
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CCP1AS1                           00000005
+CCP1AS2                           00000006
+CCP1ASE                           00000007
+CCP1CON                           00000293
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1SEL                           00000000
+CCPR1H                            00000292
+CCPR1L                            00000291
+CDAFVR0                           00000002
+CDAFVR1                           00000003
+CFGS                              00000006
+CHS0                              00000002
+CHS1                              00000003
+CHS2                              00000004
+CHS3                              00000005
+CHS4                              00000006
+CKE                               00000006
+CKP                               00000004
+CK_PORTA                          00000000
+CK_PORTC                          00000004
+CLKIN                             00000005
+CLKOUT                            00000004
+CLKR                              00000004
+CLKRCON                           0000039A
+CLKRDC0                           00000003
+CLKRDC1                           00000004
+CLKRDIV0                          00000000
+CLKRDIV1                          00000001
+CLKRDIV2                          00000002
+CLKREN                            00000007
+CLKROE                            00000006
+CLKRSLR                           00000005
+CM1CON0                           00000111
+CM1CON1                           00000112
+CM2CON0                           00000113
+CM2CON1                           00000114
+CMOUT                             00000115
+COUNTX                            00000071
+CPS0                              00000000
+CPS1                              00000001
+CPS2                              00000002
+CPS3                              00000004
+CPS4                              00000000
+CPS5                              00000001
+CPS6                              00000002
+CPS7                              00000003
+CPSCH0                            00000000
+CPSCH1                            00000001
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CPSCH2                            00000002
+CPSCH3                            00000003
+CPSCON0                           0000001E
+CPSCON1                           0000001F
+CPSON                             00000007
+CPSOUT                            00000001
+CPSRM                             00000006
+CPSRNG0                           00000002
+CPSRNG1                           00000003
+CREN                              00000004
+CSRC                              00000007
+C_SHAD                            00000000
+Cakaj_za_AD_prevodom              00000021
+Convert_num_to_char               000000BC
+DACCON0                           00000118
+DACCON1                           00000119
+DACEN                             00000007
+DACLPS                            00000006
+DACOE                             00000005
+DACOUT                            00000000
+DACPSS0                           00000002
+DACPSS1                           00000003
+DACR0                             00000000
+DACR1                             00000001
+DACR2                             00000002
+DACR3                             00000003
+DACR4                             00000004
+DC                                00000001
+DC1B0                             00000004
+DC1B1                             00000005
+DC_SHAD                           00000001
+DHEN                              00000000
+DIVU24LOOP                        0000006C
+DIVV24                            00000053
+DT_PORTA                          00000001
+DT_PORTC                          00000005
+D_NOT_A                           00000005
+ECCP1AS                           00000295
+EEADR                             00000191
+EEADRH                            00000192
+EEADRL                            00000191
+EECON1                            00000195
+EECON2                            00000196
+EEDAT                             00000193
+EEDATH                            00000194
+EEDATL                            00000193
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FERR                              00000002
+FINALX                            00000077
+FLT0                              00000002
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+FREE                              00000004
+FSR0                              00000004
+FSR0H                             00000005
+FSR0H_SHAD                        00000FE9
+FSR0L                             00000004
+FSR0L_SHAD                        00000FE8
+FSR1                              00000006
+FSR1H                             00000007
+FSR1H_SHAD                        00000FEB
+FSR1L                             00000006
+FSR1L_SHAD                        00000FEA
+FVRCON                            00000117
+FVREN                             00000007
+FVRRDY                            00000006
+GCEN                              00000007
+GIE                               00000007
+GO                                00000001
+GO_NOT_DONE                       00000001
+HFIOFL                            00000003
+HFIOFR                            00000004
+HFIOFS                            00000000
+IDX24                             0000002B
+INDF0                             00000000
+INDF1                             00000001
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOCAF                             00000393
+IOCAF0                            00000000
+IOCAF1                            00000001
+IOCAF2                            00000002
+IOCAF3                            00000003
+IOCAF4                            00000004
+IOCAF5                            00000005
+IOCAN                             00000392
+IOCAN0                            00000000
+IOCAN1                            00000001
+IOCAN2                            00000002
+IOCAN3                            00000003
+IOCAN4                            00000004
+IOCAN5                            00000005
+IOCAP                             00000391
+IOCAP0                            00000000
+IOCAP1                            00000001
+IOCAP2                            00000002
+IOCAP3                            00000003
+IOCAP4                            00000004
+IOCAP5                            00000005
+IOCIE                             00000003
+IOCIF                             00000000
+IRCF0                             00000003
+IRCF1                             00000004
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 13
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+IRCF2                             00000005
+IRCF3                             00000006
+LATA                              0000010C
+LATA0                             00000000
+LATA1                             00000001
+LATA2                             00000002
+LATA4                             00000004
+LATA5                             00000005
+LATC                              0000010E
+LATC0                             00000000
+LATC1                             00000001
+LATC2                             00000002
+LATC3                             00000003
+LATC4                             00000004
+LATC5                             00000005
+LED_BLUE                          RA1
+LFIOFR                            00000001
+LWLO                              00000005
+MC1OUT                            00000000
+MC2OUT                            00000001
+MCLR_RA3_IN                       RA3
+MDBIT                             00000000
+MDCARH                            0000039F
+MDCARL                            0000039E
+MDCH0                             00000000
+MDCH1                             00000001
+MDCH2                             00000002
+MDCH3                             00000003
+MDCHODIS                          00000007
+MDCHPOL                           00000006
+MDCHSYNC                          00000005
+MDCIN1                            00000002
+MDCIN2                            00000005
+MDCL0                             00000000
+MDCL1                             00000001
+MDCL2                             00000002
+MDCL3                             00000003
+MDCLODIS                          00000007
+MDCLPOL                           00000006
+MDCLSYNC                          00000005
+MDCON                             0000039C
+MDEN                              00000007
+MDMIN                             00000003
+MDMS0                             00000000
+MDMS1                             00000001
+MDMS2                             00000002
+MDMS3                             00000003
+MDMSODIS                          00000007
+MDOE                              00000006
+MDOPOL                            00000004
+MDOUT_MDCON                       00000003
+MDOUT_PORTC                       00000004
+MDSLR                             00000005
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 14
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+MDSRC                             0000039D
+MFIOFR                            00000002
+MULU16_24LOOP                     0000003E
+MULV16_24                         0000003B
+Measure_supply_voltage            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000001
+NOT_MCLR                          00000003
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RI                            00000002
+NOT_RMCLR                         00000003
+NOT_SS                            00000003
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_WPUEN                         00000007
+OERR                              00000001
+OPTION_REG                        00000095
+OSC1                              00000005
+OSC2                              00000004
+OSCCON                            00000099
+OSCSTAT                           0000009A
+OSCTUNE                           00000098
+OSFIE                             00000007
+OSFIF                             00000007
+OSTS                              00000005
+P                                 00000004
+P1A                               00000005
+P1B                               00000004
+P1BSEL                            00000001
+P1C                               00000003
+P1D                               00000002
+P1DC0                             00000000
+P1DC1                             00000001
+P1DC2                             00000002
+P1DC3                             00000003
+P1DC4                             00000004
+P1DC5                             00000005
+P1DC6                             00000006
+P1M0                              00000006
+P1M1                              00000007
+P1RSEN                            00000007
+PCIE                              00000006
+PCL                               00000002
+PCLATH                            0000000A
+PCLATH_SHAD                       00000FE7
+PCON                              00000096
+PEIE                              00000006
+PEN                               00000002
+PIE1                              00000091
+PIE2                              00000092
+PIR1                              00000011
+PIR2                              00000012
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 15
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PLLR                              00000006
+PORTA                             0000000C
+PORTC                             0000000E
+PR2                               0000001B
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSS1AC0                           00000002
+PSS1AC1                           00000003
+PSS1BD0                           00000000
+PSS1BD1                           00000001
+PSTR1CON                          00000296
+PWM1CON                           00000294
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RCEN                              00000003
+RCIDL                             00000006
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             00000199
+RCSTA                             0000019D
+RD                                00000000
+RESULT24                          00000028
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+RXDTSEL                           00000007
+RX_PORTA                          00000001
+RX_PORTC                          00000005
+R_NOT_W                           00000002
+S                                 00000003
+SBCDE                             00000002
+SBOREN                            00000007
+SCIE                              00000005
+SCK                               00000000
+SCKP                              00000004
+SCL                               00000000
+SCS0                              00000000
+SCS1                              00000001
+SDA                               00000001
+SDAHT                             00000003
+SDI                               00000001
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 16
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SDO1SEL                           00000006
+SDOSEL                            00000006
+SDO_PORTA                         00000004
+SDO_PORTC                         00000002
+SEN                               00000000
+SENDB                             00000003
+SHIFT_IT24                        00000063
+SMP                               00000007
+SPBRG                             0000019B
+SPBRGH                            0000019C
+SPBRGL                            0000019B
+SPEN                              00000007
+SPLLEN                            00000007
+SRCLK0                            00000004
+SRCLK1                            00000005
+SRCLK2                            00000006
+SRCON0                            0000011A
+SRCON1                            0000011B
+SREN                              00000005
+SRI                               00000001
+SRLEN                             00000007
+SRNQ                              00000004
+SRNQEN                            00000002
+SRPR                              00000000
+SRPS                              00000001
+SRQ                               00000002
+SRQEN                             00000003
+SRRC1E                            00000000
+SRRC2E                            00000001
+SRRCKE                            00000002
+SRRPE                             00000003
+SRSC1E                            00000004
+SRSC2E                            00000005
+SRSCKE                            00000006
+SRSPE                             00000007
+SS1SEL                            00000005
+SSP1ADD                           00000212
+SSP1BUF                           00000211
+SSP1CON1                          00000215
+SSP1CON2                          00000216
+SSP1CON3                          00000217
+SSP1IE                            00000003
+SSP1IF                            00000003
+SSP1MSK                           00000213
+SSP1STAT                          00000214
+SSPADD                            00000212
+SSPBUF                            00000211
+SSPCON                            00000215
+SSPCON1                           00000215
+SSPCON2                           00000216
+SSPCON3                           00000217
+SSPEN                             00000005
+SSPM0                             00000000
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 17
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPMSK                            00000213
+SSPOV                             00000006
+SSPSTAT                           00000214
+SSSEL                             00000005
+STATUS                            00000003
+STATUS_SHAD                       00000FE4
+STKOVF                            00000007
+STKPTR                            00000FED
+STKUNF                            00000006
+STR1A                             00000000
+STR1B                             00000001
+STR1C                             00000002
+STR1D                             00000003
+STR1SYNC                          00000004
+SUB24                             0000004C
+SWDTEN                            00000000
+SYNC                              00000004
+T0CKI                             00000002
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T0XCS                             00000000
+T1CKI                             00000005
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000018
+T1GCON                            00000019
+T1GGO                             00000003
+T1GGO_NOT_DONE                    00000003
+T1GPOL                            00000006
+T1GSEL                            00000003
+T1GSPM                            00000004
+T1GSS0                            00000000
+T1GSS1                            00000001
+T1GTM                             00000005
+T1GVAL                            00000002
+T1OSCEN                           00000003
+T1OSCR                            00000007
+T1OSI                             00000005
+T1OSO                             00000004
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             0000001C
+T2OUTPS0                          00000003
+T2OUTPS1                          00000004
+T2OUTPS2                          00000005
+T2OUTPS3                          00000006
+TEMPX24                           00000020
+TEMPY16                           00000023
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 18
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TEMPY24                           00000025
+TMR0                              00000015
+TMR0CS                            00000005
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR0SE                            00000004
+TMR1                              00000016
+TMR1CS0                           00000006
+TMR1CS1                           00000007
+TMR1GE                            00000007
+TMR1GIE                           00000007
+TMR1GIF                           00000007
+TMR1H                             00000017
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             00000016
+TMR1ON                            00000000
+TMR2                              0000001A
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOSH                              00000FEF
+TOSL                              00000FEE
+TRISA                             0000008C
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISC                             0000008E
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRMT                              00000001
+TSEN                              00000005
+TSRNG                             00000004
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TUN5                              00000005
+TX9                               00000006
+TX9D                              00000000
+TXCKSEL                           00000002
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             0000019A
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 19
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TXSTA                             0000019E
+TX_PORTA                          00000000
+TX_PORTC                          00000004
+UA                                00000001
+UART_CTS_IN                       RA2
+UART_RTS_OUT                      RA4
+UART_RX_IN                        RC5
+UART_TX_OUT                       RC4
+W                                 00000000
+WAKE_HW_OUT                       RA5
+WAKE_SW_OUT                       RC3
+WCOL                              00000007
+WDTCON                            00000097
+WDTPS0                            00000001
+WDTPS1                            00000002
+WDTPS2                            00000003
+WDTPS3                            00000004
+WDTPS4                            00000005
+WPUA                              0000020C
+WPUA0                             00000000
+WPUA1                             00000001
+WPUA2                             00000002
+WPUA3                             00000003
+WPUA4                             00000004
+WPUA5                             00000005
+WPUC                              0000020E
+WPUC0                             00000000
+WPUC1                             00000001
+WPUC2                             00000002
+WPUC3                             00000003
+WPUC4                             00000004
+WPUC5                             00000005
+WR                                00000001
+WREG                              00000009
+WREG_SHAD                         00000FE5
+WREN                              00000002
+WRERR                             00000003
+WUE                               00000001
+Wait_128ms                        0000008C
+Wait_16ms                         000000B2
+Wait_256ms                        00000095
+Wait_32ms                         000000A8
+Wait_512ms                        00000083
+Wait_64ms                         0000009E
+WatchDog_enable                   00000080
+Z                                 00000002
+ZERO_TEST_SKIPPED                 0000005C
+Z_SHAD                            00000002
+_BOREN_NSLEEP                     0000FDFF
+_BOREN_OFF                        0000F9FF
+_BOREN_ON                         0000FFFF
+_BOREN_SBODEN                     0000FBFF
+_BORV_19                          0000FFFF
+MPASM  5.51                       HELPERS.ASM   3-30-2016  19:27:51         PAGE 20
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_BORV_25                          0000FBFF
+_CLKOUTEN_OFF                     0000FFFF
+_CLKOUTEN_ON                      0000F7FF
+_CONFIG1                          00008007
+_CONFIG2                          00008008
+_CPD_OFF                          0000FFFF
+_CPD_ON                           0000FEFF
+_CP_OFF                           0000FFFF
+_CP_ON                            0000FF7F
+_DEVID1                           00008006
+_FCMEN_OFF                        0000DFFF
+_FCMEN_ON                         0000FFFF
+_FOSC_ECH                         0000FFFF
+_FOSC_ECL                         0000FFFD
+_FOSC_ECM                         0000FFFE
+_FOSC_EXTRC                       0000FFFB
+_FOSC_HS                          0000FFFA
+_FOSC_INTOSC                      0000FFFC
+_FOSC_LP                          0000FFF8
+_FOSC_XT                          0000FFF9
+_IDLOC0                           00008000
+_IDLOC1                           00008001
+_IDLOC2                           00008002
+_IDLOC3                           00008003
+_IESO_OFF                         0000EFFF
+_IESO_ON                          0000FFFF
+_LVP_OFF                          0000DFFF
+_LVP_ON                           0000FFFF
+_MCLRE_OFF                        0000FFBF
+_MCLRE_ON                         0000FFFF
+_PLLEN_OFF                        0000FEFF
+_PLLEN_ON                         0000FFFF
+_PWRTE_OFF                        0000FFFF
+_PWRTE_ON                         0000FFDF
+_STVREN_OFF                       0000FDFF
+_STVREN_ON                        0000FFFF
+_WDTE_NSLEEP                      0000FFF7
+_WDTE_OFF                         0000FFE7
+_WDTE_ON                          0000FFFF
+_WDTE_SWDTEN                      0000FFEF
+_WRT_ALL                          0000FFFC
+_WRT_BOOT                         0000FFFE
+_WRT_HALF                         0000FFFD
+_WRT_OFF                          0000FFFF
+__16F1823                         00000001
+ad_value                          0000002E
+
+Errors   :     0
+Warnings :     0 reported,    16 suppressed
+Messages :     0 reported,    14 suppressed
+
+
