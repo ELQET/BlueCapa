@@ -22,4 +22,9 @@
         android:orderInCategory="100"
         android:title="@string/stringActionShowList"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_showEula"
+        android:orderInCategory="100"
+        android:title="@string/stringActionShowAppAula"
+        app:showAsAction="never" />
 </menu>

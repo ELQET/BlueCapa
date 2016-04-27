@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private String longPressMac = "";
     private int holderWidth = 0;
     private int holderHeight = 0;
+    private EulaDialog eulaDialog;
     private final int VOID_CODE = 0;
     private final int SELECT_IMAGE_CODE = 1;
     private final int REFRESH_SERVICE_CODE = 2;
@@ -55,6 +56,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        eulaDialog = new EulaDialog(this);
+        eulaDialog.show(false);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             makeText(this, R.string.stringBleNotSupported, LENGTH_SHORT).show();
             finish();
@@ -225,6 +228,12 @@ public class MainActivity extends AppCompatActivity {
             i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.putExtra("case", "show");
             mainActivity.startActivityForResult(i, VOID_CODE);
+            return true;
+        }
+
+        //click on show Eula
+        if (id == R.id.action_showEula) {
+            eulaDialog.show(true);
             return true;
         }
 
