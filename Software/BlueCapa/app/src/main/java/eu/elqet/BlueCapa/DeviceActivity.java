@@ -239,7 +239,6 @@ public class DeviceActivity extends Activity {
             audioFileDialog.setFileEndsWith(".mp3");
             audioFileDialog.addFileListener(new AudioFileDialog.FileSelectedListener() {
                 public void fileSelected(File file) {
-                    Log.d(getClass().getName(), "selected file " + file.toString());
                     mp3File = file;
                     audioFileText.setText(mp3File.getName());
                     deviceData.setAudioFile(mp3File);
