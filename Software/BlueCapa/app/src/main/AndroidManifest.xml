@@ -40,7 +40,7 @@
 
                 <data
                     android:host="www.elqet.sk"
-                    android:pathPrefix="/gizmos"
+                    android:pathPrefix="/bluecapa"
                     android:scheme="http" />
             </intent-filter>
             <intent-filter>

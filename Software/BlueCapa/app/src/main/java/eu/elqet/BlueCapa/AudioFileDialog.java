@@ -5,7 +5,6 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Environment;
-import android.util.Log;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
@@ -48,7 +47,6 @@ public class AudioFileDialog {
         if (selectDirectoryOption) {
             builder.setPositiveButton(R.string.stringSelectDir, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
-                    Log.d(TAG, currentPath.getPath());
                     fireDirectorySelectedEvent(currentPath);
                 }
             });
